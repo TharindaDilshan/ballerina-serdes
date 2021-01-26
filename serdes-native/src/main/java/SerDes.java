@@ -1,8 +1,15 @@
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Message;
 
+/**
+* SerDes class to create Dynamic messages.
+*
+* @author Tharinda.
+* @return None.
+* @throws DescriptorValidationException.
+* @exception DescriptorValidationException.
+*/
 public class SerDes {
     public static void main(String[] args) throws Descriptors.DescriptorValidationException {
 
@@ -30,7 +37,6 @@ public class SerDes {
 
         DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
         Descriptors.Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
-//        System.out.println(messageDescriptor.getFields());
         DynamicMessage message = newMessageFromSchema
                 .setField(messageDescriptor.findFieldByName("id"), 1)
                 .setField(messageDescriptor.findFieldByName("name"), "Tharinda Dilshan")
@@ -40,10 +46,10 @@ public class SerDes {
         byte[] bytes = message.toByteArray();
 
         try {
-            DynamicMessage des = DynamicMessage.parseFrom(schema, bytes);
-            System.out.println(des);
+            DynamicMessage.parseFrom(schema, bytes);
+            
         } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
+
         }
 
     }

@@ -3,6 +3,11 @@ import com.google.protobuf.DescriptorProtos;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+* Message Field Definitions.
+*
+* @author Tharinda.
+*/
 public class ProtobufMessageField {
 
     private static Map<String, DescriptorProtos.FieldDescriptorProto.Type> fieldTypes;

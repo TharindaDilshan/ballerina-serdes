@@ -1,5 +1,10 @@
 import com.google.protobuf.DescriptorProtos;
 
+/**
+* Message Builder Class.
+*
+* @author Tharinda.
+*/
 public class ProtobufMessageBuilder {
     // Describes a message type
     private DescriptorProtos.DescriptorProto.Builder messageBuilder;
@@ -24,7 +29,7 @@ public class ProtobufMessageBuilder {
         return this;
     }
 
-    public ProtobufMessageBuilder addNestedMessage(ProtobufMessage nestedMessage){
+    public ProtobufMessageBuilder addNestedMessage(ProtobufMessage nestedMessage) {
         messageBuilder.addNestedType(nestedMessage.getProtobufMessage());
         return this;
     }
@@ -35,9 +40,11 @@ public class ProtobufMessageBuilder {
     }
 
     // Add a single field to a message
-    private void addField(DescriptorProtos.FieldDescriptorProto.Label label, String type, String name, int number, String defaultValue) {
+    private void addField(DescriptorProtos.FieldDescriptorProto.Label label, String type, String name, int number, 
+                            String defaultValue) {
         // Describes a field within a message.
-        DescriptorProtos.FieldDescriptorProto.Builder messageFieldBuilder = DescriptorProtos.FieldDescriptorProto.newBuilder();
+        DescriptorProtos.FieldDescriptorProto.Builder messageFieldBuilder = DescriptorProtos.FieldDescriptorProto
+                                                                                            .newBuilder();
 
         messageFieldBuilder.setLabel(label);
         messageFieldBuilder.setName(name);

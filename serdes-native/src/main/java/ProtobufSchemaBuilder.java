@@ -4,6 +4,11 @@ import com.google.protobuf.Descriptors;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+* Schema Builder class.
+*
+* @author Tharinda.
+*/
 public class ProtobufSchemaBuilder {
     // Describes a complete .proto file
     private DescriptorProtos.FileDescriptorProto.Builder fileDescriptorProtoBuilder;
@@ -29,7 +34,8 @@ public class ProtobufSchemaBuilder {
 
     // Compiles the .proto file and builds FileDescriptors
     public Descriptors.Descriptor build() throws Descriptors.DescriptorValidationException {
-        DescriptorProtos.FileDescriptorSet.Builder newFileDescriptorSetBuilder = DescriptorProtos.FileDescriptorSet.newBuilder();
+        DescriptorProtos.FileDescriptorSet.Builder newFileDescriptorSetBuilder = DescriptorProtos.FileDescriptorSet
+                                                                                                    .newBuilder();
         newFileDescriptorSetBuilder.addFile(fileDescriptorProtoBuilder.build());
         newFileDescriptorSetBuilder.mergeFrom(fileDescriptorSetBuilder.build());
         DescriptorProtos.FileDescriptorSet fileDescriptorSet = newFileDescriptorSetBuilder.build();
@@ -40,7 +46,8 @@ public class ProtobufSchemaBuilder {
 
             /* Resolve import dependencies
             List<String> dependencies = fileDescriptorProto.getDependencyList();
-            Map<String, Descriptors.FileDescriptor> resolvedFileDescMap = new HashMap<String, Descriptors.FileDescriptor>();
+            Map<String, Descriptors.FileDescriptor> resolvedFileDescMap = new HashMap<String, Descriptors
+                                                                                                .FileDescriptor>();
 
             for (String dependency : dependencies) {
                 Descriptors.FileDescriptor fd = resolvedFileDescMap.get(dependency);
@@ -48,13 +55,13 @@ public class ProtobufSchemaBuilder {
             }
             */
 
-            Descriptors.FileDescriptor[] fileDescriptorArray = new Descriptors.FileDescriptor[resolvedFileDescriptors.size()];
-//            System.out.println(fileDescriptorProto.getName());
-//            System.out.println("break");
-            fileDescriptor = Descriptors.FileDescriptor.buildFrom(fileDescriptorProto, resolvedFileDescriptors.toArray(fileDescriptorArray));
+            Descriptors.FileDescriptor[] fileDescriptorArray = new Descriptors
+                                                                    .FileDescriptor[resolvedFileDescriptors.size()];
+            fileDescriptor = Descriptors.FileDescriptor
+                                .buildFrom(fileDescriptorProto, resolvedFileDescriptors.toArray(fileDescriptorArray));
         }
         Descriptors.Descriptor messageBuilder = null;
-        for (Descriptors.Descriptor messageType : fileDescriptor.getMessageTypes()){
+        for (Descriptors.Descriptor messageType : fileDescriptor.getMessageTypes()) {
             messageBuilder = messageType;
         }
 
