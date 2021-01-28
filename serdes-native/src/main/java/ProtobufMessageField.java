@@ -38,9 +38,6 @@ public class ProtobufMessageField {
         fieldTypes.put("bool", DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL);
         fieldTypes.put("string", DescriptorProtos.FieldDescriptorProto.Type.TYPE_STRING);
         fieldTypes.put("bytes", DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES);
-//        fieldTypes.put("enum", DescriptorProtos.FieldDescriptorProto.Type.TYPE_ENUM);
-//        fieldTypes.put("message", DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE);
-//        fieldTypes.put("group", DescriptorProtos.FieldDescriptorProto.Type.TYPE_GROUP);
 
         fieldLabels = new HashMap<>();
         fieldLabels.put("optional", DescriptorProtos.FieldDescriptorProto.Label.LABEL_OPTIONAL);

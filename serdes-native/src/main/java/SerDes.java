@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.Map;
 
 import com.google.protobuf.Descriptors;
@@ -26,22 +27,50 @@ public class SerDes {
         BMap<BString, Object> contact = ValueCreator.createMapValue();
 
         BMap<BString, Object> phone = ValueCreator.createMapValue();
-        phone.put(StringUtils.fromString("mobile"), StringUtils.fromString("123456"));
-        phone.put(StringUtils.fromString("home"), StringUtils.fromString("6666666"));
+        phone.put(StringUtils.fromString("mobile"), 123456);
+        phone.put(StringUtils.fromString("home"), 6666666);
 
-        BMap<BString, Object> address = ValueCreator.createMapValue();
-        address.put(StringUtils.fromString("street1"), StringUtils.fromString("abcd"));
-        address.put(StringUtils.fromString("street2"), StringUtils.fromString("qwerty"));
+        // BMap<BString, Object> address = ValueCreator.createMapValue();
+        // address.put(StringUtils.fromString("street1"), StringUtils.fromString("abcd"));
+        // address.put(StringUtils.fromString("street2"), StringUtils.fromString("qwerty"));
 
         contact.put(StringUtils.fromString("phone"), phone);
-        contact.put(StringUtils.fromString("address"), address);
+        // contact.put(StringUtils.fromString("address"), address);
         person.put(StringUtils.fromString("contact"), contact);
 
-        // System.out.println(person);
 
-        for (Map.Entry<BString, Object> entry : person.entrySet()){
-                System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue()); 
-        }
+        ProtobufMessage builds = generateSchema(person, "person");
+        System.out.println(builds.getProtobufMessage());
+    }
+
+    public static Map<String, Object> builderList = new HashMap<>();
+    public static int i = 1;
+
+    public static ProtobufMessage generateSchema(BMap<BString, Object> bMap, String name){
+        // Map<String, Object> builder = new HashMap<>();
+        ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(name);
+        int number = 1;
+
+        for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
+                // System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue().getClass().getSimpleName()); 
+                if(entry.getValue() instanceof BMap) {
+                        BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
+                        ProtobufMessage nestedMessage = generateSchema(objToBMap, entry.getKey().toString());
+                        nestedMessageBuilder.addNestedMessage(nestedMessage);
+                        nestedMessageBuilder.addField("required", entry.getKey().toString(), entry.getKey().toString(), number);
+                        number++;
+                        // builder.put(entry.getKey().toString(), generateSchema(objToBMap, entry.getKey().toString()));
+
+                }else {
+                        String dt = DataTypeMapper.getDataType(entry.getValue().getClass().getSimpleName());
+                        // builder.put(entry.getKey().toString(), dt);
+                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString(), number);
+                        number++;
+                }
+        } 
+        // builderList.put(String.valueOf(i), builder);
+        // i++;
+        return nestedMessageBuilder.build();
     }
 
     public static void serdesFunction() throws Descriptors.DescriptorValidationException {
