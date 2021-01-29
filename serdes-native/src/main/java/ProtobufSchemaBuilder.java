@@ -7,7 +7,6 @@ import java.util.List;
 /**
 * Schema Builder class.
 *
-* @author Tharinda.
 */
 public class ProtobufSchemaBuilder {
     // Describes a complete .proto file

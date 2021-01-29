@@ -3,7 +3,6 @@ import com.google.protobuf.DescriptorProtos;
 /**
 * Message Builder Class.
 *
-* @author Tharinda.
 */
 public class ProtobufMessageBuilder {
     // Describes a message type

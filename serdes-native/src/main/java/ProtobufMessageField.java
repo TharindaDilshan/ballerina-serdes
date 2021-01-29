@@ -6,7 +6,6 @@ import java.util.Map;
 /**
 * Message Field Definitions.
 *
-* @author Tharinda.
 */
 public class ProtobufMessageField {
 
