@@ -23,7 +23,7 @@ public class DataTypeMapper {
         // dataTypes.put("sfixed32");
         // dataTypes.put("sfixed64");
         dataTypes.put("Boolean", "bool");
-        // dataTypes.put("String", "string");
+        dataTypes.put("String", "string");
         dataTypes.put("BmpStringValue", "string");
         dataTypes.put("Byte", "bytes");
     }

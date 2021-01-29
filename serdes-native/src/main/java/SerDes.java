@@ -1,7 +1,8 @@
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.protobuf.Descriptors;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -18,10 +19,10 @@ import io.ballerina.runtime.api.values.BString;
 * @exception DescriptorValidationException.
 */
 public class SerDes {
-    public static void main(String[] args) throws Descriptors.DescriptorValidationException {
+    public static void main(String[] args) throws DescriptorValidationException {
         // serdesFunction();
         BMap<BString, Object> person = ValueCreator.createMapValue();
-        person.put(StringUtils.fromString("name"), StringUtils.fromString("Tharinda"));
+        person.put(StringUtils.fromString("name"), "Tharinda");
 
         BMap<BString, Object> contact = ValueCreator.createMapValue();
 
@@ -30,25 +31,27 @@ public class SerDes {
         phone.put(StringUtils.fromString("home"), 6666666);
 
         BMap<BString, Object> address = ValueCreator.createMapValue();
-        address.put(StringUtils.fromString("street1"), StringUtils.fromString("abcd"));
-        address.put(StringUtils.fromString("street2"), StringUtils.fromString("qwerty"));
+        address.put(StringUtils.fromString("street1"), "abcd");
+        address.put(StringUtils.fromString("street2"), "qwerty");
 
-        contact.put(StringUtils.fromString("phone"), phone);
-        contact.put(StringUtils.fromString("address"), address);
-        person.put(StringUtils.fromString("contact"), contact);
+        contact.put(StringUtils.fromString("Phone"), phone);
+        contact.put(StringUtils.fromString("Address"), address);
+        person.put(StringUtils.fromString("Contact"), contact);
 
 
-        ProtobufMessage protobufMessage = generateSchema(person, "person");
+        ProtobufMessage protobufMessage = generateSchema(person, "Person");
         // System.out.println(protobufMessage.getProtobufMessage());
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Student.proto");
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
-        Descriptors.Descriptor schema = schemaBuilder.build();
+        Descriptor schema = schemaBuilder.build();
 
-        System.out.println(schema);
+        DynamicMessage msg = generateDynamicMessage(person, schema, "Person");
+        System.out.println(msg);
+
     }
 
-    public static ProtobufMessage generateSchema(BMap<BString, Object> bMap, String name){
+    public static ProtobufMessage generateSchema(BMap<BString, Object> bMap, String name) {
         ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(name);
         int number = 1;
 
@@ -58,19 +61,39 @@ public class SerDes {
                         BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
                         ProtobufMessage nestedMessage = generateSchema(objToBMap, entry.getKey().toString());
                         nestedMessageBuilder.addNestedMessage(nestedMessage);
-                        nestedMessageBuilder.addField("required", entry.getKey().toString(), entry.getKey().toString(), number);
+                        nestedMessageBuilder.addField("required", entry.getKey().toString(), entry.getKey().toString().toLowerCase(), number);
                         number++;
 
                 }else {
                         String dt = DataTypeMapper.getDataType(entry.getValue().getClass().getSimpleName());
-                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString(), number);
+                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString().toLowerCase(), number);
                         number++;
                 }
         } 
         return nestedMessageBuilder.build();
     }
 
-    public static void serdesFunction() throws Descriptors.DescriptorValidationException {
+    public static DynamicMessage generateDynamicMessage(BMap<BString, Object> bMap, Descriptor schema, String name) {
+
+        DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+        Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+        for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
+                if(entry.getValue() instanceof BMap) {
+                        Descriptor subMessageDescriptor = schema.findNestedTypeByName(entry.getKey().toString());
+                        BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
+                        DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor, entry.getKey().toString());
+                        // System.out.println(nestedMessage.toString() + entry.getKey().toString());
+                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString().toLowerCase()), nestedMessage);
+                }else {
+                        String fieldName = entry.getKey().toString().toLowerCase();
+                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
+                }
+        } 
+        return newMessageFromSchema.build();
+    }
+
+    public static void serdesFunction() throws DescriptorValidationException {
         ProtobufMessage nestedMessageBuilder = ProtobufMessage.newMessageBuilder("Phone")
                 .addField("required", "string", "mobile", 1, "0773256")
                 .addField("optional", "string", "home", 2, "4567892")
@@ -85,16 +108,16 @@ public class SerDes {
                 .build();
 
         schemaBuilder.addMessageToProtoSchema(messageBuilder);
-        Descriptors.Descriptor schema = schemaBuilder.build();
+        Descriptor schema = schemaBuilder.build();
 
-        Descriptors.Descriptor subMessageDescriptor = schema.findNestedTypeByName("Phone");
+        Descriptor subMessageDescriptor = schema.findNestedTypeByName("Phone");
         DynamicMessage subMessage = DynamicMessage.newBuilder(schema.findNestedTypeByName("Phone"))
                 .setField(subMessageDescriptor.findFieldByName("mobile"), "74848")
                 .setField(subMessageDescriptor.findFieldByName("home"), "8745")
                 .build();
 
         DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
-        Descriptors.Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+        Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
         DynamicMessage message = newMessageFromSchema
                 .setField(messageDescriptor.findFieldByName("id"), 1)
                 .setField(messageDescriptor.findFieldByName("name"), "Tharinda Dilshan")
