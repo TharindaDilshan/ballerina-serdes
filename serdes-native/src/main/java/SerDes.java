@@ -10,6 +10,7 @@ import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
+import jdk.jfr.Description;
 
 /**
 * SerDes class to create Dynamic messages.
@@ -47,7 +48,16 @@ public class SerDes {
         Descriptor schema = schemaBuilder.build();
 
         DynamicMessage msg = generateDynamicMessage(person, schema, "Person");
-        System.out.println(msg);
+        // System.out.println(msg);
+
+        byte[] bytes = msg.toByteArray();
+
+        try {
+                DynamicMessage des = DynamicMessage.parseFrom(schema, bytes);
+                System.out.println(des);
+        } catch (InvalidProtocolBufferException e) {
+
+        }
 
     }
 
@@ -100,9 +110,9 @@ public class SerDes {
                 .build();
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Student.proto");
-        ProtobufMessage messageBuilder = ProtobufMessage.newMessageBuilder("StudentMsg") // message Student
-                .addField("required", "int32", "id", 1)        // required int32 id = 1
-                .addField("required", "string", "name", 2)    // required string name = 2
+        ProtobufMessage messageBuilder = ProtobufMessage.newMessageBuilder("StudentMsg")
+                .addField("required", "int32", "id", 1)   
+                .addField("required", "string", "name", 2)  
                 .addNestedMessage(nestedMessageBuilder)
                 .addField("optional", "Phone", "phone", 3)
                 .build();
@@ -110,8 +120,9 @@ public class SerDes {
         schemaBuilder.addMessageToProtoSchema(messageBuilder);
         Descriptor schema = schemaBuilder.build();
 
-        Descriptor subMessageDescriptor = schema.findNestedTypeByName("Phone");
-        DynamicMessage subMessage = DynamicMessage.newBuilder(schema.findNestedTypeByName("Phone"))
+        DynamicMessage.Builder subMessageFromSchema = DynamicMessage.newBuilder(schema.findNestedTypeByName("Phone"));
+        Descriptor subMessageDescriptor = subMessageFromSchema.getDescriptorForType();
+        DynamicMessage subMessage = subMessageFromSchema
                 .setField(subMessageDescriptor.findFieldByName("mobile"), "74848")
                 .setField(subMessageDescriptor.findFieldByName("home"), "8745")
                 .build();
