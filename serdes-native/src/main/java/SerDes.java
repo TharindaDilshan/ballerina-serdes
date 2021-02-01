@@ -3,6 +3,8 @@ import java.util.Map;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -53,7 +55,11 @@ public class SerDes {
 
         try {
                 DynamicMessage des = deserialize(schema, bytes);
-                System.out.println(des);
+                // System.out.println(des);
+                BMap<BString, Object> test = dynamicMessageToBMap(des);
+                for (Map.Entry<BString, Object> entry : test.entrySet()) {
+                        System.out.println(entry.getKey() + " " + entry.getValue().toString());
+                }
         } catch (InvalidProtocolBufferException e) {
 
         }
@@ -109,9 +115,24 @@ public class SerDes {
             return DynamicMessage.parseFrom(schema, bytes);
     }
 
-//     public static BMap<BString, Object> dynamicMessageToBMap() {
+    public static BMap<BString, Object> dynamicMessageToBMap(DynamicMessage message) {
+        BMap<BString, Object> bMap = ValueCreator.createMapValue();
+        // System.out.println(message);
+        for (Map.Entry<FieldDescriptor, Object> entry : message.getAllFields().entrySet()) {
+                // System.out.println(entry.getValue() instanceof DynamicMessage);
+                if(entry.getValue() instanceof DynamicMessage) {
+                        DynamicMessage msg = (DynamicMessage) entry.getValue();
+                        // dynamicMessageToBMap(msg);
+                        bMap.put(StringUtils.fromString(entry.getKey().getName()), dynamicMessageToBMap(msg));
+                        
+                }else {
+                        // System.out.println(entry.getKey().getName());
+                        bMap.put(StringUtils.fromString(entry.getKey().getName()), entry.getValue());
+                }
+        }
 
-//     }
+        return bMap;
+    }
 
     public static void serdesFunction() throws DescriptorValidationException {
         ProtobufMessage nestedMessageBuilder = ProtobufMessage.newMessageBuilder("Phone")
