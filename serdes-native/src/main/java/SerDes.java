@@ -10,7 +10,6 @@ import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
-import jdk.jfr.Description;
 
 /**
 * SerDes class to create Dynamic messages.
@@ -50,10 +49,10 @@ public class SerDes {
         DynamicMessage msg = generateDynamicMessage(person, schema, "Person");
         // System.out.println(msg);
 
-        byte[] bytes = msg.toByteArray();
+        byte[] bytes = serialize(msg);
 
         try {
-                DynamicMessage des = DynamicMessage.parseFrom(schema, bytes);
+                DynamicMessage des = deserialize(schema, bytes);
                 System.out.println(des);
         } catch (InvalidProtocolBufferException e) {
 
@@ -93,7 +92,6 @@ public class SerDes {
                         Descriptor subMessageDescriptor = schema.findNestedTypeByName(entry.getKey().toString());
                         BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
                         DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor, entry.getKey().toString());
-                        // System.out.println(nestedMessage.toString() + entry.getKey().toString());
                         newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString().toLowerCase()), nestedMessage);
                 }else {
                         String fieldName = entry.getKey().toString().toLowerCase();
@@ -102,6 +100,18 @@ public class SerDes {
         } 
         return newMessageFromSchema.build();
     }
+
+    public static byte[] serialize(DynamicMessage message) {
+            return message.toByteArray();
+    }
+
+    public static DynamicMessage deserialize(Descriptor schema, byte[] bytes) throws InvalidProtocolBufferException {
+            return DynamicMessage.parseFrom(schema, bytes);
+    }
+
+//     public static BMap<BString, Object> dynamicMessageToBMap() {
+
+//     }
 
     public static void serdesFunction() throws DescriptorValidationException {
         ProtobufMessage nestedMessageBuilder = ProtobufMessage.newMessageBuilder("Phone")
