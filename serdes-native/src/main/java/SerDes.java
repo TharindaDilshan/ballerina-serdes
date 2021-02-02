@@ -57,9 +57,7 @@ public class SerDes {
                 DynamicMessage des = deserialize(schema, bytes);
                 // System.out.println(des);
                 BMap<BString, Object> test = dynamicMessageToBMap(des);
-                for (Map.Entry<BString, Object> entry : test.entrySet()) {
-                        System.out.println(entry.getKey() + " " + entry.getValue().toString());
-                }
+                
         } catch (InvalidProtocolBufferException e) {
 
         }
@@ -67,7 +65,7 @@ public class SerDes {
     }
 
     public static ProtobufMessage generateSchema(BMap<BString, Object> bMap, String name) {
-        ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(name);
+        ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(name.toUpperCase());
         int number = 1;
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
@@ -76,12 +74,12 @@ public class SerDes {
                         BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
                         ProtobufMessage nestedMessage = generateSchema(objToBMap, entry.getKey().toString());
                         nestedMessageBuilder.addNestedMessage(nestedMessage);
-                        nestedMessageBuilder.addField("required", entry.getKey().toString(), entry.getKey().toString().toLowerCase(), number);
+                        nestedMessageBuilder.addField("required", entry.getKey().toString().toUpperCase(), entry.getKey().toString(), number);
                         number++;
 
                 }else {
-                        String dt = DataTypeMapper.getDataType(entry.getValue().getClass().getSimpleName());
-                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString().toLowerCase(), number);
+                        String dt = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
+                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString(), number);
                         number++;
                 }
         } 
@@ -95,12 +93,12 @@ public class SerDes {
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
                 if(entry.getValue() instanceof BMap) {
-                        Descriptor subMessageDescriptor = schema.findNestedTypeByName(entry.getKey().toString());
+                        Descriptor subMessageDescriptor = schema.findNestedTypeByName(entry.getKey().toString().toUpperCase());
                         BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
                         DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor, entry.getKey().toString());
-                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString().toLowerCase()), nestedMessage);
+                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString()), nestedMessage);
                 }else {
-                        String fieldName = entry.getKey().toString().toLowerCase();
+                        String fieldName = entry.getKey().toString();
                         newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
                 }
         } 
@@ -117,17 +115,19 @@ public class SerDes {
 
     public static BMap<BString, Object> dynamicMessageToBMap(DynamicMessage message) {
         BMap<BString, Object> bMap = ValueCreator.createMapValue();
-        // System.out.println(message);
+
         for (Map.Entry<FieldDescriptor, Object> entry : message.getAllFields().entrySet()) {
-                // System.out.println(entry.getValue() instanceof DynamicMessage);
                 if(entry.getValue() instanceof DynamicMessage) {
                         DynamicMessage msg = (DynamicMessage) entry.getValue();
-                        // dynamicMessageToBMap(msg);
                         bMap.put(StringUtils.fromString(entry.getKey().getName()), dynamicMessageToBMap(msg));
                         
                 }else {
-                        // System.out.println(entry.getKey().getName());
-                        bMap.put(StringUtils.fromString(entry.getKey().getName()), entry.getValue());
+                        System.out.println(entry.getKey().toString() + "  " + entry.getValue().toString());
+                        if (entry.getValue().getClass().getSimpleName() == "String") {
+                                bMap.put(StringUtils.fromString(entry.getKey().getName()), StringUtils.fromString(entry.getValue().toString()));
+                        } else {
+                                bMap.put(StringUtils.fromString(entry.getKey().getName()), entry.getValue());
+                        }
                 }
         }
 

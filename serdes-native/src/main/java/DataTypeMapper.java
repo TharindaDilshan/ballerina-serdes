@@ -2,30 +2,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataTypeMapper {
-    private static Map<String, String> dataTypes;
+    private static Map<String, String> javaToProtoMap;
 
-    public static String getDataType(String type) {
-        return dataTypes.get(type);
+    public static String getProtoFieldType(String type) {
+        return javaToProtoMap.get(type);
     }
 
     static {
-        dataTypes = new HashMap<>();
-        dataTypes.put("Double", "double");
-        dataTypes.put("Float", "float");
-        dataTypes.put("Integer", "int32");
-        // dataTypes.put("int64");
-        // dataTypes.put("uint32");
-        // dataTypes.put("uint64");
-        // dataTypes.put("sint32");
-        // dataTypes.put("sint64");
-        // dataTypes.put("fixed32");
-        // dataTypes.put("fixed64");
-        // dataTypes.put("sfixed32");
-        // dataTypes.put("sfixed64");
-        dataTypes.put("Boolean", "bool");
-        dataTypes.put("String", "string");
-        dataTypes.put("BmpStringValue", "string");
-        dataTypes.put("Byte", "bytes");
+        javaToProtoMap = new HashMap<>();
+        javaToProtoMap.put("Double", "double");
+        javaToProtoMap.put("Float", "float");
+        javaToProtoMap.put("Integer", "int32");
+        // javaToProtoMap.put("int64");
+        // javaToProtoMap.put("uint32");
+        // javaToProtoMap.put("uint64");
+        // javaToProtoMap.put("sint32");
+        // javaToProtoMap.put("sint64");
+        // javaToProtoMap.put("fixed32");
+        // javaToProtoMap.put("fixed64");
+        // javaToProtoMap.put("sfixed32");
+        // javaToProtoMap.put("sfixed64");
+        javaToProtoMap.put("Boolean", "bool");
+        javaToProtoMap.put("String", "string");
+        javaToProtoMap.put("BmpStringValue", "string");
+        javaToProtoMap.put("Byte", "bytes");
     }
     
 }
