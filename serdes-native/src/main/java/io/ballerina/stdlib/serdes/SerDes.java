@@ -1,25 +1,25 @@
-import java.util.HashMap;
-import java.util.Map;
+package io.ballerina.stdlib.serdes;
 
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FieldDescriptor;
-import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
+import java.util.Locale;
+import java.util.Map;
+
 /**
-* SerDes class to create Dynamic messages.
-*
-* @return None.
-* @throws DescriptorValidationException.
-* @exception DescriptorValidationException.
-*/
+ * SerDes class to create Dynamic messages.
+ *
+ * @return None.
+ * @throws DescriptorValidationException
+ * @exception DescriptorValidationException
+ */
 public class SerDes {
     public static void main(String[] args) throws DescriptorValidationException {
         // serdesFunction();
@@ -42,22 +42,19 @@ public class SerDes {
 
 
         ProtobufMessage protobufMessage = generateSchema(person, "Person");
-        // System.out.println(protobufMessage.getProtobufMessage());
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Student.proto");
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
         Descriptor schema = schemaBuilder.build();
 
         DynamicMessage msg = generateDynamicMessage(person, schema, "Person");
-        // System.out.println(msg);
 
         byte[] bytes = serialize(msg);
 
         try {
-                DynamicMessage des = deserialize(schema, bytes);
-                // System.out.println(des);
-                BMap<BString, Object> test = dynamicMessageToBMap(des);
-                
+            DynamicMessage des = deserialize(schema, bytes);
+            dynamicMessageToBMap(des);
+
         } catch (InvalidProtocolBufferException e) {
 
         }
@@ -65,24 +62,26 @@ public class SerDes {
     }
 
     public static ProtobufMessage generateSchema(BMap<BString, Object> bMap, String name) {
-        ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(name.toUpperCase());
+        ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage
+                .newMessageBuilder(name.toUpperCase(Locale.getDefault()));
         int number = 1;
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
-                // System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue().getClass().getSimpleName()); 
-                if(entry.getValue() instanceof BMap) {
-                        BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
-                        ProtobufMessage nestedMessage = generateSchema(objToBMap, entry.getKey().toString());
-                        nestedMessageBuilder.addNestedMessage(nestedMessage);
-                        nestedMessageBuilder.addField("required", entry.getKey().toString().toUpperCase(), entry.getKey().toString(), number);
-                        number++;
+            if (entry.getValue() instanceof BMap) {
+                BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
+                ProtobufMessage nestedMessage = generateSchema(objToBMap, entry.getKey().toString());
+                nestedMessageBuilder.addNestedMessage(nestedMessage);
+                nestedMessageBuilder
+                        .addField("required", entry.getKey().toString().toUpperCase(Locale.getDefault()),
+                                entry.getKey().toString(), number);
+                number++;
 
-                }else {
-                        String dt = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
-                        nestedMessageBuilder.addField("required", dt, entry.getKey().toString(), number);
-                        number++;
-                }
-        } 
+            } else {
+                String dt = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
+                nestedMessageBuilder.addField("required", dt, entry.getKey().toString(), number);
+                number++;
+            }
+        }
         return nestedMessageBuilder.build();
     }
 
@@ -92,43 +91,46 @@ public class SerDes {
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
-                if(entry.getValue() instanceof BMap) {
-                        Descriptor subMessageDescriptor = schema.findNestedTypeByName(entry.getKey().toString().toUpperCase());
-                        BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
-                        DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor, entry.getKey().toString());
-                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString()), nestedMessage);
-                }else {
-                        String fieldName = entry.getKey().toString();
-                        newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
-                }
-        } 
+            if (entry.getValue() instanceof BMap) {
+                Descriptor subMessageDescriptor = schema
+                        .findNestedTypeByName(entry.getKey().toString()
+                                .toUpperCase(Locale.getDefault()));
+                BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
+                DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor,
+                        entry.getKey().toString());
+                newMessageFromSchema.setField(messageDescriptor.findFieldByName(entry.getKey().toString()),
+                        nestedMessage);
+            } else {
+                String fieldName = entry.getKey().toString();
+                newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
+            }
+        }
         return newMessageFromSchema.build();
     }
 
     public static byte[] serialize(DynamicMessage message) {
-            return message.toByteArray();
+        return message.toByteArray();
     }
 
     public static DynamicMessage deserialize(Descriptor schema, byte[] bytes) throws InvalidProtocolBufferException {
-            return DynamicMessage.parseFrom(schema, bytes);
+        return DynamicMessage.parseFrom(schema, bytes);
     }
 
     public static BMap<BString, Object> dynamicMessageToBMap(DynamicMessage message) {
         BMap<BString, Object> bMap = ValueCreator.createMapValue();
-
         for (Map.Entry<FieldDescriptor, Object> entry : message.getAllFields().entrySet()) {
-                if(entry.getValue() instanceof DynamicMessage) {
-                        DynamicMessage msg = (DynamicMessage) entry.getValue();
-                        bMap.put(StringUtils.fromString(entry.getKey().getName()), dynamicMessageToBMap(msg));
-                        
-                }else {
-                        System.out.println(entry.getKey().toString() + "  " + entry.getValue().toString());
-                        if (entry.getValue().getClass().getSimpleName() == "String") {
-                                bMap.put(StringUtils.fromString(entry.getKey().getName()), StringUtils.fromString(entry.getValue().toString()));
-                        } else {
-                                bMap.put(StringUtils.fromString(entry.getKey().getName()), entry.getValue());
-                        }
+            if (entry.getValue() instanceof DynamicMessage) {
+                DynamicMessage msg = (DynamicMessage) entry.getValue();
+                bMap.put(StringUtils.fromString(entry.getKey().getName()), dynamicMessageToBMap(msg));
+
+            } else {
+                if (entry.getValue().getClass().getSimpleName().equals("String")) {
+                    bMap.put(StringUtils.fromString(entry.getKey().getName()),
+                            StringUtils.fromString(entry.getValue().toString()));
+                } else {
+                    bMap.put(StringUtils.fromString(entry.getKey().getName()), entry.getValue());
                 }
+            }
         }
 
         return bMap;
@@ -142,8 +144,8 @@ public class SerDes {
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Student.proto");
         ProtobufMessage messageBuilder = ProtobufMessage.newMessageBuilder("StudentMsg")
-                .addField("required", "int32", "id", 1)   
-                .addField("required", "string", "name", 2)  
+                .addField("required", "int32", "id", 1)
+                .addField("required", "string", "name", 2)
                 .addNestedMessage(nestedMessageBuilder)
                 .addField("optional", "Phone", "phone", 3)
                 .build();
@@ -169,8 +171,7 @@ public class SerDes {
         byte[] bytes = message.toByteArray();
 
         try {
-        DynamicMessage des = DynamicMessage.parseFrom(schema, bytes);
-        System.out.println(des);
+            DynamicMessage.parseFrom(schema, bytes);
         } catch (InvalidProtocolBufferException e) {
 
         }

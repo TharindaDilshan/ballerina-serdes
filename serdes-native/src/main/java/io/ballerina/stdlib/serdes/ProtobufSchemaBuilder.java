@@ -1,3 +1,5 @@
+package io.ballerina.stdlib.serdes;
+
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.Descriptors;
 

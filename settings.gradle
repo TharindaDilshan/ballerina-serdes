@@ -23,7 +23,7 @@ plugins {
 
 rootProject.name = 'serdes'
 include(':build-config:checkstyle')
-include ':serdes-native'
+include ':serdes-native',':serdes-ballerina'
 
 gradleEnterprise {
    buildScan {

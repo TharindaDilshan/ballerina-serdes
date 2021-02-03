@@ -1,50 +1,20 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.14'
-    }
-}
-
 plugins {
     id 'java'
     id 'checkstyle'
     id 'com.github.spotbugs'
-    id 'com.google.protobuf'
-}
-
-group 'org.tharinda'
-version '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
+    // id 'com.google.protobuf'
 }
 
 dependencies {
-    compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.14.0'
-    compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: '3.14.0'
-    compile 'com.google.protobuf:protobuf-gradle-plugin:0.8.14'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}"
+    compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: "${protobufVersion}"
+    // compile 'com.google.protobuf:protobuf-gradle-plugin:0.8.14'
 
     checkstyle project(':build-config:checkstyle')
     checkstyle "com.puppycrawl.tools:checkstyle:${checkstylePluginVersion}"
 
     compile group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     compile group: 'org.ballerinalang', name: 'ballerina-runtime', version: "${ballerinaLangVersion}"
-}
-
-test {
-    useJUnitPlatform()
-}
-
-protobuf {
-    // Configure the protoc executable
-    protoc {
-        // Download from repositories
-        artifact = 'com.google.protobuf:protoc:3.11.4'
-    }
 }
 
 checkstyle {
@@ -69,6 +39,20 @@ spotbugsMain {
     }
 }
 
+def excludePattern = '**/module-info.java'
+tasks.withType(Checkstyle) {
+    exclude excludePattern
+}
+
 spotbugsTest {
     enabled = false
+}
+
+compileJava {
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+        ]
+        classpath = files()
+    }
 }

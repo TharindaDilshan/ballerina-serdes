@@ -1,6 +1,12 @@
+package io.ballerina.stdlib.serdes;
+
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+* DataTypeMapper Class.
+*
+*/
 public class DataTypeMapper {
     private static Map<String, String> javaToProtoMap;
 
