@@ -267,4 +267,8 @@ ballerinaBuild.dependsOn initializeVariables
 ballerinaBuild.finalizedBy revertTomlFile
 build.dependsOn ballerinaBuild
 
+//build {
+//    dependsOn{ballerinaBuild}
+//}
+
 createTestableJarZip.dependsOn ballerinaBuild
