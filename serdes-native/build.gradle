@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'checkstyle'
     id 'com.github.spotbugs'
+    id 'eclipse'
     // id 'com.google.protobuf'
 }
 
@@ -54,5 +55,22 @@ compileJava {
                 '--module-path', classpath.asPath,
         ]
         classpath = files()
+    }
+}
+
+eclipse {
+    classpath {
+        containers 'org.eclipse.buildship.core.gradleclasspathcontainer'
+        file {
+            whenMerged {
+                entries.findAll { it.properties.kind.equals('lib') && !it.properties.path.contains("junit") }.each {
+                    it.entryAttributes['module'] = 'true'
+                }
+                entries.findAll { it.properties.path.startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }.each {
+                    it.entryAttributes['module'] = 'true'
+                }
+
+            }
+        }
     }
 }

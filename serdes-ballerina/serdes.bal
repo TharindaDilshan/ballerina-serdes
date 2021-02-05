@@ -1,25 +1,33 @@
 import ballerina/jballerina.java;
 import ballerina/io;
 
+type Contact record {
+    string mobile;
+    float home;
+};
+
 type Person record {
    string name;
    int age;
+   Contact contact;
 };
 
 public function main() {
 
-    Person president = { name: "Joe",  age:70 };
+    // Person president = { name: "Joe",  age:70 };
 
-    //buildSerFromType(Person);
+    // string x;
 
-    io:println(Person);
+    // buildSerFromType(Person);
+
+    var str = generateSchema(Person);
+    io:println(str);
 }
 
-public function generateSchema(string name) returns string = @java:Method {
-	'class: "io.ballerina.stdlib.serdes.Main"
+public function generateSchema(typedesc<anydata> T) returns handle = @java:Method {
+	'class: "io.ballerina.stdlib.serdes.Serdes"
 }  external;
 
 public function buildSerFromType(typedesc<anydata> T) {
-    //map<string> st = <map<string>>T;
-    // io:println(T);
+    io:println(T);
 }

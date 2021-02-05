@@ -9,9 +9,14 @@ import java.util.Map;
 */
 public class DataTypeMapper {
     private static Map<String, String> javaToProtoMap;
+    private static Map<String, String> ballerinaToProtoMap;
 
     public static String getProtoFieldType(String type) {
         return javaToProtoMap.get(type);
+    }
+
+    public static String getBallerinaToProtoMap(String type) {
+        return ballerinaToProtoMap.get(type);
     }
 
     static {
@@ -32,6 +37,15 @@ public class DataTypeMapper {
         javaToProtoMap.put("String", "string");
         javaToProtoMap.put("BmpStringValue", "string");
         javaToProtoMap.put("Byte", "bytes");
+    }
+
+    static {
+        ballerinaToProtoMap = new HashMap<>();
+        ballerinaToProtoMap.put("float", "float");
+        ballerinaToProtoMap.put("integer", "int32");
+        ballerinaToProtoMap.put("boolean", "bool");
+        ballerinaToProtoMap.put("string", "string");
+        ballerinaToProtoMap.put("byte", "bytes");
     }
     
 }
