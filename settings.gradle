@@ -21,7 +21,7 @@ plugins {
    id "com.gradle.enterprise" version "3.2"
 }
 
-rootProject.name = 'serdes'
+rootProject.name = 'module-ballerina-serdes'
 include(':build-config:checkstyle')
 include ':serdes-native',':serdes-ballerina'
 

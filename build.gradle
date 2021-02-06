@@ -20,7 +20,7 @@ plugins {
     id 'com.github.johnrengelman.shadow'
     id 'de.undercouch.download'
     id 'net.researchgate.release'
-    // id 'com.google.protobuf'
+    id 'com.google.protobuf'
 }
 
 allprojects {
@@ -28,8 +28,8 @@ allprojects {
     version = project.version
 
     apply plugin: 'maven-publish'
-//     apply plugin: 'java'
-    // apply plugin: 'com.google.protobuf'
+    apply plugin: 'java'
+    apply plugin: 'com.google.protobuf'
 
     repositories {
         mavenLocal()
