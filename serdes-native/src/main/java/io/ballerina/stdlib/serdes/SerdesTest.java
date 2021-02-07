@@ -13,21 +13,21 @@ import java.util.Map;
  * Serdes.
  *
  */
-public class Serdes {
+public class SerdesTest {
 
     public String type;
     private static BMap<BString, Object> typeMap = ValueCreator.createMapValue();
     private ProtobufMessage protobufMessage;
 
-    public Serdes(BTypedesc balType) {
+    public SerdesTest(BTypedesc balType) {
         type = balType.getDescribingType().getName();
 
         initialize(balType);
         protobufMessage = generateSchemaFromBMap(typeMap, type);
     }
 
-    public static Serdes generateSchema(BTypedesc balType) {
-        return new Serdes(balType);
+    public static SerdesTest generateSchema(BTypedesc balType) {
+        return new SerdesTest(balType);
     }
 
     public ProtobufMessage getProtobufMessage() {

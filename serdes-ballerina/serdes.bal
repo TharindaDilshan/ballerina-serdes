@@ -25,7 +25,7 @@ public function main() {
 }
 
 public function generateSchema(typedesc<anydata> T) returns handle = @java:Method {
-	'class: "io.ballerina.stdlib.serdes.Serdes"
+	'class: "io.ballerina.stdlib.serdes.SerdesTest"
 }  external;
 
 public function buildSerFromType(typedesc<anydata> T) {
