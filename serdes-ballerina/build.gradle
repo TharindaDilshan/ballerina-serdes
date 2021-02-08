@@ -21,13 +21,22 @@ description = 'Ballerina - SerDes Ballerina'
 
 configurations {
     jbalTools
+    externalJars
 }
 
 dependencies {
     jbalTools("org.ballerinalang:jballerina-tools:${ballerinaLangVersion}") {
         transitive = false
     }
+    externalJars(group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}") {
+        transitive = false
+    }
+    externalJars(group: 'com.google.protobuf', name: 'protobuf-java-util', version: "${protobufVersion}") {
+        transitive = false
+    }
     compile project(':serdes-native')
+    compile group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}"
+    compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: "${protobufVersion}"
 }
 
 clean {
@@ -45,6 +54,11 @@ task unpackJballerinaTools(type: Copy) {
         from zipTree(artifact.getFile())
         into new File("${buildDir}/target/extracted-distributions", "jballerina-tools-zip")
     }
+}
+
+task copyToLib(type: Copy) {
+    into "$project.projectDir/lib"
+    from configurations.externalJars
 }
 
 task unpackStdLibs() {
@@ -95,6 +109,7 @@ task updateTomlFile {
 
         def newConfig = ballerinaConfigFile.text.replace("@project.version@", project.version)
         newConfig = newConfig.replace("@toml.version@", tomlVersion)
+        newConfig = newConfig.replace("@protobuf.version@", project.protobufVersion)
         ballerinaConfigFile.text = newConfig
 
         def newDependencyConfig = ballerinaDependencyFile.text.replace("@stdlib.io.version@", stdlibDependentIoVersion)
@@ -252,7 +267,8 @@ publishing {
 
 unpackStdLibs.dependsOn unpackJballerinaTools
 copyStdlibs.dependsOn unpackStdLibs
-updateTomlFile.dependsOn copyStdlibs
+copyToLib.dependsOn copyStdlibs
+updateTomlFile.dependsOn copyToLib
 
 ballerinaTest.dependsOn ":serdes-native:build"
 ballerinaTest.dependsOn updateTomlFile
@@ -267,8 +283,5 @@ ballerinaBuild.dependsOn initializeVariables
 ballerinaBuild.finalizedBy revertTomlFile
 build.dependsOn ballerinaBuild
 
-//build {
-//    dependsOn{ballerinaBuild}
-//}
 
 createTestableJarZip.dependsOn ballerinaBuild

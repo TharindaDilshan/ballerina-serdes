@@ -15,26 +15,31 @@ import java.util.Map;
  */
 public class SerdesTest {
 
-    public String type;
+    public BTypedesc type;
     private static BMap<BString, Object> typeMap = ValueCreator.createMapValue();
-    private ProtobufMessage protobufMessage;
+    private ProtobufMessage protobufMessageSchema;
+    // private DynamicMessage protobufDynamicMessage;
 
     public SerdesTest(BTypedesc balType) {
-        type = balType.getDescribingType().getName();
+        type = balType;
 
-        initialize(balType);
-        protobufMessage = generateSchemaFromBMap(typeMap, type);
+        typeDescToBMap(balType);
+        protobufMessageSchema = generateSchemaFromBMap(typeMap, type.getDescribingType().getName());
     }
 
     public static SerdesTest generateSchema(BTypedesc balType) {
         return new SerdesTest(balType);
     }
 
+    // public static byte[] serialize(type T) {
+    //     String.
+    // }
+
     public ProtobufMessage getProtobufMessage() {
-        return protobufMessage;
+        return protobufMessageSchema;
     }
 
-    public static void initialize(BTypedesc balType) {
+    public static void typeDescToBMap(BTypedesc balType) {
         String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(balType.getDescribingType().getName());
         if (ballerinaToProtoMap != null) {
             typeMap.put(StringUtils.fromString("field"), ballerinaToProtoMap);
