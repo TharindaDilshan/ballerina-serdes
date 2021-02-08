@@ -1,4 +1,4 @@
-import ballerina/io;
+//import ballerina/io;
 import ballerina/test;
 
 type Contact record {
@@ -16,5 +16,5 @@ type Person record {
 public function testSchemaGeneration() {
     var schema = generateSchema(Person);
     // test:assertEquals(schema, "");
-    io:println(schema);
+    //io:println(schema);
 }
