@@ -45,6 +45,7 @@ public class DataTypeMapper {
         ballerinaToProtoMap.put("integer", "int32");
         ballerinaToProtoMap.put("boolean", "bool");
         ballerinaToProtoMap.put("string", "string");
+        ballerinaToProtoMap.put("BmpStringValue", "string");
         ballerinaToProtoMap.put("byte", "bytes");
     }
     
