@@ -1,5 +1,3 @@
-//import ballerina/io;
-
 class ProtoSerializer {
     private typedesc<anydata> dataType;
     private handle schema;
@@ -9,7 +7,7 @@ class ProtoSerializer {
         self.schema = generateSchema(ballerinaDataType);
     }
 
-    //public isolated function serialize(anydata data) {
-    //
-    //}
+    public function serialize(anydata data) returns byte[] {
+        return serialize(self.schema, data);
+    }
 }

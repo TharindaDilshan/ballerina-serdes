@@ -24,6 +24,7 @@ public class DataTypeMapper {
         javaToProtoMap.put("Double", "double");
         javaToProtoMap.put("Float", "float");
         javaToProtoMap.put("Integer", "int32");
+        javaToProtoMap.put("Long", "int32");
         // javaToProtoMap.put("int64");
         // javaToProtoMap.put("uint32");
         // javaToProtoMap.put("uint64");

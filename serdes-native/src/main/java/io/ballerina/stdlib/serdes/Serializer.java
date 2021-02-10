@@ -3,8 +3,12 @@ package io.ballerina.stdlib.serdes;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
+import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 import io.ballerina.runtime.api.values.BTypedesc;
@@ -37,14 +41,21 @@ public class Serializer {
         return schema;
     }
 
-    public static void serialize(Descriptor schema, Object message) {
+    public static BArray serialize(Descriptor schema, Object message) {
         DynamicMessage dynamicMessage = generateDynamicMessage(objectToBMap(message), schema);
-        System.out.println(dynamicMessage);
+        BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
+        return bArray;
     }
 
     private static BMap<BString, Object> typeDescToBMap(BTypedesc balType) {
         BMap<BString, Object> typeMap = ValueCreator.createMapValue();
         String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(balType.getDescribingType().getName());
+
+//        Type type = balType.getDescribingType();
+//        if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
+//            RecordType recordType = (RecordType) type;
+//            TypeTa
+//        }
 
         if (ballerinaToProtoMap != null) {
             typeMap.put(StringUtils.fromString("field"), ballerinaToProtoMap);
@@ -72,7 +83,7 @@ public class Serializer {
                         .addField("required", fieldType, fieldName, number);
 
             } else {
-                String fieldType = entry.getValue().toString();
+                String fieldType = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
                 String fieldName = entry.getKey().toString();
                 messageBuilder.addField("required", fieldType, fieldName, number);
             }
@@ -83,7 +94,7 @@ public class Serializer {
 
     private static BMap<BString, Object> objectToBMap(Object object) {
         BMap<BString, Object> typeMap = ValueCreator.createMapValue();
-        String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(object.getClass().getName());
+        String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(object.getClass().getSimpleName());
 
         if (ballerinaToProtoMap != null) {
             if (ballerinaToProtoMap.equals("string")) {
@@ -114,8 +125,16 @@ public class Serializer {
                 DynamicMessage nestedMessage = generateDynamicMessage(objToBMap, subMessageDescriptor);
                 newMessageFromSchema.setField(messageDescriptor.findFieldByName(nestedTypeName), nestedMessage);
             } else {
+                String fieldType = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
                 String fieldName = entry.getKey().toString();
-                newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
+                if (fieldType.equals("string")) {
+                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue().toString());
+                } else if (fieldType.equals("int32")) {
+                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), Integer.valueOf(entry.getValue().toString()));
+                } else {
+                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
+                }
+
             }
         }
         return newMessageFromSchema.build();
