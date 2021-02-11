@@ -21,7 +21,7 @@ public class DataTypeMapper {
 
     static {
         javaToProtoMap = new HashMap<>();
-        javaToProtoMap.put("Double", "double");
+        javaToProtoMap.put("Double", "float");
         javaToProtoMap.put("Float", "float");
         javaToProtoMap.put("Integer", "int32");
         javaToProtoMap.put("Long", "int32");
@@ -44,6 +44,7 @@ public class DataTypeMapper {
         ballerinaToProtoMap = new HashMap<>();
         ballerinaToProtoMap.put("float", "float");
         ballerinaToProtoMap.put("integer", "int32");
+        ballerinaToProtoMap.put("int", "int32");
         ballerinaToProtoMap.put("boolean", "bool");
         ballerinaToProtoMap.put("string", "string");
         ballerinaToProtoMap.put("BmpStringValue", "string");

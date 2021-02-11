@@ -44,6 +44,7 @@ def excludePattern = '**/module-info.java'
 tasks.withType(Checkstyle) {
     exclude excludePattern
     exclude '**/Serializer.java'
+    exclude '**/ProtobufSchemaBuilder.java'
 }
 
 spotbugsTest {
