@@ -29,7 +29,7 @@ import java.util.Map;
 public class Serializer {
     public static Descriptor generateSchema(BTypedesc balType) {
         ProtobufMessage protobufMessage = generateSchemaFromTypedesc(balType);
-//        System.out.println(protobufMessage.getProtobufMessage());
+        System.out.println(protobufMessage.getProtobufMessage());
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Schema.proto");
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
@@ -89,7 +89,12 @@ public class Serializer {
             } else if (fieldType.getClass().getSimpleName().equals("BArrayType")) {
                 ArrayType arrayType = (ArrayType) fieldType;
                 String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
-                messageBuilder.addField("repeated", elementType, fieldName, number);
+                if (elementType.equals("bytes")) {
+                    messageBuilder.addField("required", elementType, fieldName, number);
+                } else {
+                    messageBuilder.addField("repeated", elementType, fieldName, number);
+                }
+
 
             } else {
                 String protoFieldType = DataTypeMapper.getBallerinaToProtoMap(fieldType.toString());
@@ -147,10 +152,21 @@ public class Serializer {
             } else if (entry.getValue() instanceof BArray) {
                 BArray bArray = (BArray) entry.getValue();
                 long len = bArray.size();
+                String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
+                String fieldName = entry.getKey().toString();
+                byte[] byt = bArray.getBytes();
+                System.out.println(byt);
+
+//                System.out.println(fieldType);
+                if (fieldType.equals("bytes")) {
+//                    newMessageFromSchema
+//                            .setField(messageDescriptor.findFieldByName(fieldName),
+//                                    Byte.valueOf(bArray.getBytes()));
+                    continue;
+                }
+
                 for(long i = 0; i < len; i++) {
                     Object element = bArray.get(i);
-                    String fieldType = DataTypeMapper.getProtoFieldType(element.getClass().getSimpleName());
-                    String fieldName = entry.getKey().toString();
 
                     if (fieldType.equals("string")) {
                         newMessageFromSchema
@@ -163,11 +179,16 @@ public class Serializer {
                         newMessageFromSchema
                                 .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
                                         Float.valueOf(element.toString()));
+                    } else if (fieldType.equals("bytes")) {
+                        newMessageFromSchema
+                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
+                                        Byte.valueOf(element.toString()));
                     } else {
                         newMessageFromSchema
                                 .addRepeatedField(messageDescriptor.findFieldByName(fieldName), element);
                     }
                 }
+
             }else {
                 String fieldType = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
                 String fieldName = entry.getKey().toString();

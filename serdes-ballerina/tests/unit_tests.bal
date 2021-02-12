@@ -9,14 +9,15 @@ type Contact record {
 type Person record {
    string name;
    int age;
-   int[] numbers;
+   byte[] img;
    Contact contact;
 };
 
 @test:Config{}
 public function testSchemaGeneration() {
+    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
     Contact phone = {mobile: "123456", home: 1.234};
-    Person president = { name: "Joe",  age:70, numbers:[2,4], contact:phone };
+    Person president = { name: "Joe",  age:70, img:byteArray, contact:phone };
 
     ProtoSerializer ser = new(Person);
     byte[] encoded = ser.serialize(president);

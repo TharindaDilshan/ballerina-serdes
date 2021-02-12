@@ -38,6 +38,7 @@ public class DataTypeMapper {
         javaToProtoMap.put("String", "string");
         javaToProtoMap.put("BmpStringValue", "string");
         javaToProtoMap.put("Byte", "bytes");
+        javaToProtoMap.put("byte", "bytes");
     }
 
     static {
