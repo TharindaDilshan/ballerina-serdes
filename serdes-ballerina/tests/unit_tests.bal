@@ -14,7 +14,7 @@ type Person record {
 };
 
 @test:Config{}
-public function testSchemaGeneration() {
+public function testSerialization() {
     byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
     Contact phone = {mobile: "123456", home: 1.234};
     Person president = { name: "Joe",  age:70, img:byteArray, contact:phone };

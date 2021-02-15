@@ -4,6 +4,7 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.ArrayType;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class Serializer {
     public static Descriptor generateSchema(BTypedesc balType) {
         ProtobufMessage protobufMessage = generateSchemaFromTypedesc(balType);
-        System.out.println(protobufMessage.getProtobufMessage());
+//        System.out.println(protobufMessage.getProtobufMessage());
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Schema.proto");
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
@@ -45,8 +46,13 @@ public class Serializer {
 
     public static BArray serialize(Descriptor schema, Object message) {
         DynamicMessage dynamicMessage = generateDynamicMessage(message, schema);
-        System.out.println(dynamicMessage);
+//        System.out.println(dynamicMessage);
         BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
+        try {
+            System.out.println(DynamicMessage.parseFrom(schema, dynamicMessage.toByteArray()));
+        } catch (InvalidProtocolBufferException e) {
+            e.printStackTrace();
+        }
         return bArray;
     }
 
@@ -55,19 +61,21 @@ public class Serializer {
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(typedesc.getDescribingType().getName());
-            return generateSchemaForPrimitive(ballerinaToProtoMap);
+            String messageName = ballerinaToProtoMap.toUpperCase(Locale.getDefault());
+
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(messageName);
+            generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, "atomicField", 1);
+
+            return messageBuilder.build();
         } else {
             RecordType recordType = (RecordType) type;
             return generateSchemaForRecord(recordType.getFields(), typedesc.getDescribingType().getName());
         }
     }
 
-    private static ProtobufMessage generateSchemaForPrimitive(String type) {
-        ProtobufMessageBuilder messageBuilder = ProtobufMessage
-                .newMessageBuilder(type.toUpperCase(Locale.getDefault()));
-
-        messageBuilder.addField("required", type, "atomicField", 1);
-        return messageBuilder.build();
+    private static void generateSchemaForPrimitive(ProtobufMessageBuilder messageBuilder, String type,
+                                    String name, int number) {
+        messageBuilder.addField("required", type, name, number);
     }
 
     private static ProtobufMessage generateSchemaForRecord(Map<String, Field> dataTypeMap, String name) {
@@ -98,7 +106,7 @@ public class Serializer {
 
             } else {
                 String protoFieldType = DataTypeMapper.getBallerinaToProtoMap(fieldType.toString());
-                messageBuilder.addField("required", protoFieldType, fieldName, number);
+                generateSchemaForPrimitive(messageBuilder, protoFieldType, fieldName, number);
             }
             number++;
         }
@@ -154,14 +162,9 @@ public class Serializer {
                 long len = bArray.size();
                 String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
                 String fieldName = entry.getKey().toString();
-                byte[] byt = bArray.getBytes();
-                System.out.println(byt);
 
-//                System.out.println(fieldType);
                 if (fieldType.equals("bytes")) {
-//                    newMessageFromSchema
-//                            .setField(messageDescriptor.findFieldByName(fieldName),
-//                                    Byte.valueOf(bArray.getBytes()));
+                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), bArray.getBytes());
                     continue;
                 }
 
@@ -179,10 +182,6 @@ public class Serializer {
                         newMessageFromSchema
                                 .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
                                         Float.valueOf(element.toString()));
-                    } else if (fieldType.equals("bytes")) {
-                        newMessageFromSchema
-                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
-                                        Byte.valueOf(element.toString()));
                     } else {
                         newMessageFromSchema
                                 .addRepeatedField(messageDescriptor.findFieldByName(fieldName), element);
