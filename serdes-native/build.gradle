@@ -44,6 +44,8 @@ def excludePattern = '**/module-info.java'
 tasks.withType(Checkstyle) {
     exclude excludePattern
     exclude '**/Serializer.java'
+    exclude '**/Deserializer.java'
+    exclude '**/SchemaGenerator.java'
     exclude '**/ProtobufSchemaBuilder.java'
 }
 

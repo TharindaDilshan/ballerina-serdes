@@ -20,7 +20,9 @@ public function testSerialization() {
     Person president = { name: "Joe",  age:70, img:byteArray, contact:phone };
 
     ProtoSerializer ser = new(Person);
+    //io:println(ser);
     byte[] encoded = ser.serialize(president);
 
-    io:println(encoded);
+    ProtoDeserializer des = new(Person);
+    io:println(des.deserialize(encoded));
 }
