@@ -6,6 +6,7 @@ import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.util.Locale;
@@ -18,7 +19,7 @@ import java.util.Map;
  */
 public class SchemaGenerator {
 
-    public static Descriptors.Descriptor generateSchema(BTypedesc balType) {
+    public static void generateSchema(BObject serializer, BTypedesc balType) {
         ProtobufMessage protobufMessage = generateSchemaFromTypedesc(balType);
 //        System.out.println(protobufMessage.getProtobufMessage());
 
@@ -30,8 +31,7 @@ public class SchemaGenerator {
         } catch (Descriptors.DescriptorValidationException e) {
 
         }
-
-        return schema;
+        serializer.addNativeData("schema", schema);
     }
 
     private static ProtobufMessage generateSchemaFromTypedesc(BTypedesc typedesc) {

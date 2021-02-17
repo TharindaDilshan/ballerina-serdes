@@ -1,15 +1,16 @@
 //import ballerina/io;
 
 class ProtoDeserializer {
+    *Deserializer;
+
     private typedesc<anydata> dataType;
-    private handle schema;
 
     public function init(typedesc<anydata> ballerinaDataType) {
         self.dataType = ballerinaDataType;
-        self.schema = generateSchema(ballerinaDataType);
+        generateSchema(self, ballerinaDataType);
     }
 
     public function deserialize(byte[] encodedMessage) returns handle {
-        return deserialize(self.schema, encodedMessage);
+        return deserialize(self, encodedMessage, self.dataType);
     }
 }

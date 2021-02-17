@@ -8,6 +8,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
 import java.util.Locale;
@@ -21,15 +22,13 @@ import java.util.Map;
  * @exception DescriptorValidationException
  */
 public class Serializer {
-    public static BArray serialize(Descriptor schema, Object message) {
+    public static BArray serialize(BObject serializer, Object message) {
+        Descriptor schema = (Descriptor) serializer.getNativeData("schema");
+
         DynamicMessage dynamicMessage = generateDynamicMessage(message, schema);
 //        System.out.println(dynamicMessage);
         BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
-        try {
-            System.out.println(DynamicMessage.parseFrom(schema, dynamicMessage.toByteArray()));
-        } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
-        }
+
         return bArray;
     }
 
