@@ -10,7 +10,7 @@ class ProtoDeserializer {
         generateSchema(self, ballerinaDataType);
     }
 
-    public function deserialize(byte[] encodedMessage) returns handle {
+    public function deserialize(byte[] encodedMessage) returns anydata {
         return deserialize(self, encodedMessage, self.dataType);
     }
 }

@@ -45,6 +45,13 @@ public class SchemaGenerator {
             generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, "atomicField", 1);
 
             return messageBuilder.build();
+        } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+            ArrayType arrayType = (ArrayType) type;
+
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("ArrayBuilder");
+            generateSchemaForArray(messageBuilder, arrayType, "arrayField", 1);
+
+            return messageBuilder.build();
         } else {
             RecordType recordType = (RecordType) type;
             return generateSchemaForRecord(recordType.getFields(), typedesc.getDescribingType().getName());
@@ -54,6 +61,17 @@ public class SchemaGenerator {
     private static void generateSchemaForPrimitive(ProtobufMessageBuilder messageBuilder, String type,
                                                    String name, int number) {
         messageBuilder.addField("required", type, name, number);
+    }
+
+    private static void generateSchemaForArray(ProtobufMessageBuilder messageBuilder, ArrayType arrayType,
+                                               String name, int number) {
+        String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
+
+        if (elementType.equals("bytes")) {
+            messageBuilder.addField("required", elementType, name, number);
+        } else {
+            messageBuilder.addField("repeated", elementType, name, number);
+        }
     }
 
     private static ProtobufMessage generateSchemaForRecord(Map<String, Field> dataTypeMap, String name) {
@@ -74,14 +92,7 @@ public class SchemaGenerator {
 
             } else if (fieldType.getClass().getSimpleName().equals("BArrayType")) {
                 ArrayType arrayType = (ArrayType) fieldType;
-                String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
-                if (elementType.equals("bytes")) {
-                    messageBuilder.addField("required", elementType, fieldName, number);
-                } else {
-                    messageBuilder.addField("repeated", elementType, fieldName, number);
-                }
-
-
+                generateSchemaForArray(messageBuilder, arrayType, fieldName, number);
             } else {
                 String protoFieldType = DataTypeMapper.getBallerinaToProtoMap(fieldType.toString());
                 generateSchemaForPrimitive(messageBuilder, protoFieldType, fieldName, number);

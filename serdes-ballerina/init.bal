@@ -8,7 +8,7 @@ public function serialize(Serializer ser, anydata data) returns byte[] = @java:M
 	'class: "io.ballerina.stdlib.serdes.Serializer"
 }  external;
 
-public function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns handle =
+public function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns anydata =
 @java:Method {
     'class: "io.ballerina.stdlib.serdes.Deserializer"
 }  external;

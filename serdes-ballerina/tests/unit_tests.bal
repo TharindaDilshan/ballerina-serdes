@@ -13,7 +13,7 @@ type Person record {
    Contact contact;
 };
 
-//type StringArray string[];
+type StringArray string[];
 
 @test:Config{}
 public function testSerialization() {
@@ -22,16 +22,16 @@ public function testSerialization() {
     Person president = { name: "Joe",  age:70, img:byteArray, contact:phone };
 
 
-    //ProtoSerializer ser = new(Person);
-    ////io:println(ser);
-    //byte[] encoded = ser.serialize(president);
-    //
-    //ProtoDeserializer des = new(Person);
-    //io:println(des.deserialize(encoded));
+    ProtoSerializer ser = new(Person);
+    //io:println(ser);
+    byte[] encoded = ser.serialize(president);
 
-    ProtoSerializer ser = new(int);
-    byte[] encoded = ser.serialize(666);
-    //io:println(encoded);
-    ProtoDeserializer des = new(int);
+    ProtoDeserializer des = new(Person);
     io:println(des.deserialize(encoded));
+
+    //ProtoSerializer ser = new(StringArray);
+    ////byte[] encoded = ser.serialize(666);
+    //io:println(ser);
+    ////ProtoDeserializer des = new(int);
+    ////io:println(des.deserialize(encoded));
 }

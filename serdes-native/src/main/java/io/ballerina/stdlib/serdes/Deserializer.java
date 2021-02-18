@@ -18,7 +18,7 @@ import java.util.Map;
  *
  */
 public class Deserializer {
-    public static DynamicMessage deserialize(BObject des, BArray encodedMessage, BTypedesc dataType) {
+    public static Object deserialize(BObject des, BArray encodedMessage, BTypedesc dataType) {
         Descriptor schema = (Descriptor) des.getNativeData("schema");
 
         DynamicMessage dynamicMessage = null;
@@ -29,24 +29,25 @@ public class Deserializer {
             e.printStackTrace();
         }
 
-        dynamicMessageToBallerinaType(dynamicMessage, dataType);
-
-        return dynamicMessage;
+        return dynamicMessageToBallerinaType(dynamicMessage, dataType);
     }
 
     private static DynamicMessage generateDynamicMessageFromBytes(Descriptor schema, BArray encodedMessage) throws InvalidProtocolBufferException {
         return DynamicMessage.parseFrom(schema, encodedMessage.getBytes());
     }
 
-    private static void dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc) {
+    private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc) {
         Type type = typedesc.getDescribingType();
+        Object obj = null;
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             for (Map.Entry<Descriptors.FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
-                Object obj = primitiveToBallerina(entry.getValue());
-                System.out.println(obj);
+                obj = primitiveToBallerina(entry.getValue());
+//                System.out.println(obj);
             }
         }
+
+        return obj;
     }
 
     private static Object primitiveToBallerina(Object value) {
