@@ -14,6 +14,7 @@ type Person record {
 };
 
 type StringArray string[];
+type IntArray int[];
 
 @test:Config{}
 public function testSerialization() {
@@ -29,9 +30,14 @@ public function testSerialization() {
     ProtoDeserializer des = new(Person);
     io:println(des.deserialize(encoded));
 
-    //ProtoSerializer ser = new(StringArray);
-    ////byte[] encoded = ser.serialize(666);
-    //io:println(ser);
+    //ProtoSerializer ser = new(IntArray);
+    ////io:println(ser);
+    //byte[] encoded = ser.serialize([666, 1010]);
+    //io:println(encoded);
+
+    //ProtoSerializer ser = new(string);
+    //byte[] encoded = ser.serialize("tharinda");
+    //io:println(encoded);
     ////ProtoDeserializer des = new(int);
     ////io:println(des.deserialize(encoded));
 }

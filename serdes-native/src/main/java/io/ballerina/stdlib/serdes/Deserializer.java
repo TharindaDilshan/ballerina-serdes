@@ -25,6 +25,7 @@ public class Deserializer {
         
         try {
             dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
+            System.out.println(dynamicMessage);
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
         }

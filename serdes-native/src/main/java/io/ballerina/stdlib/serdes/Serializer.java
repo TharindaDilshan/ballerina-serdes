@@ -1,10 +1,9 @@
 package io.ballerina.stdlib.serdes;
 
-import com.google.protobuf.Descriptors;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
@@ -33,33 +32,70 @@ public class Serializer {
     }
 
     private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema) {
-        String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(dataObject.getClass().getSimpleName());
+        String dataType = dataObject.getClass().getSimpleName();
+        String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(dataType);
 
         if (ballerinaToProtoMap != null) {
-            return generateDynamicMessageForPrimitive(dataObject, schema);
+            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+            FieldDescriptor field = messageDescriptor.findFieldByName("atomicField");
+            generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
+            return  newMessageFromSchema.build();
+        }
+
+        // Non Primitive
+        if (dataType.equals("ArrayValueImpl")) {
+            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+            FieldDescriptor field = messageDescriptor.findFieldByName("arrayField");
+            generateDynamicMessageForArray(newMessageFromSchema, field, dataObject);
+            return  newMessageFromSchema.build();
         } else {
-            // non primitive
             return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
         }
     }
 
-    private static DynamicMessage generateDynamicMessageForPrimitive(Object value, Descriptor schema) {
-        DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
-        Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
-
-        Descriptors.FieldDescriptor fieldName = messageDescriptor.findFieldByName("atomicField");
+    private static void generateDynamicMessageForPrimitive(DynamicMessage.Builder messageBuilder,
+                                                           FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getBallerinaToProtoMap(value.getClass().getSimpleName());
         if (fieldType.equals("string")) {
-            newMessageFromSchema.setField(fieldName, value.toString());
+            messageBuilder.setField(field, value.toString());
         } else if (fieldType.equals("int32")) {
-            newMessageFromSchema.setField(fieldName, Integer.valueOf(value.toString()));
+            messageBuilder.setField(field, Integer.valueOf(value.toString()));
         } else if (fieldType.equals("float")) {
-            newMessageFromSchema.setField(fieldName, Float.valueOf(value.toString()));
+            messageBuilder.setField(field, Float.valueOf(value.toString()));
         } else {
-            newMessageFromSchema.setField(fieldName, value);
+            messageBuilder.setField(field, value);
+        }
+    }
+
+    private static void generateDynamicMessageForArray(DynamicMessage.Builder messageBuilder,
+                                                                 FieldDescriptor field, Object value) {
+        BArray bArray = (BArray) value;
+        long len = bArray.size();
+        // String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
+        String fieldType = field.getType().name().toLowerCase(Locale.ROOT);
+
+        if (fieldType.equals("bytes")) {
+            messageBuilder.setField(field, bArray.getBytes());
+            return;
         }
 
-        return  newMessageFromSchema.build();
+        for(long i = 0; i < len; i++) {
+            Object element = bArray.get(i);
+
+            if (fieldType.equals("string")) {
+                messageBuilder.addRepeatedField(field, element.toString());
+            } else if (fieldType.equals("int32")) {
+                messageBuilder.addRepeatedField(field, Integer.valueOf(element.toString()));
+            } else if (fieldType.equals("float")) {
+                messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
+            } else {
+                messageBuilder.addRepeatedField(field, element);
+            }
+        }
     }
 
     private static DynamicMessage generateDynamicMessageForRecord(BMap<BString, Object> bMap, Descriptor schema) {
@@ -76,55 +112,15 @@ public class Serializer {
                 DynamicMessage nestedMessage = generateDynamicMessageForRecord(objToBMap, subMessageDescriptor);
                 newMessageFromSchema.setField(messageDescriptor.findFieldByName(nestedTypeName), nestedMessage);
             } else if (entry.getValue() instanceof BArray) {
-                BArray bArray = (BArray) entry.getValue();
-                long len = bArray.size();
-                String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
                 String fieldName = entry.getKey().toString();
+                FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
-                if (fieldType.equals("bytes")) {
-                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(fieldName), bArray.getBytes());
-                    continue;
-                }
-
-                for(long i = 0; i < len; i++) {
-                    Object element = bArray.get(i);
-
-                    if (fieldType.equals("string")) {
-                        newMessageFromSchema
-                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName), element.toString());
-                    } else if (fieldType.equals("int32")) {
-                        newMessageFromSchema
-                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
-                                        Integer.valueOf(element.toString()));
-                    } else if (fieldType.equals("float")) {
-                        newMessageFromSchema
-                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName),
-                                        Float.valueOf(element.toString()));
-                    } else {
-                        newMessageFromSchema
-                                .addRepeatedField(messageDescriptor.findFieldByName(fieldName), element);
-                    }
-                }
-
+                generateDynamicMessageForArray(newMessageFromSchema, field, entry.getValue());
             }else {
-                String fieldType = DataTypeMapper.getProtoFieldType(entry.getValue().getClass().getSimpleName());
                 String fieldName = entry.getKey().toString();
-                if (fieldType.equals("string")) {
-                    newMessageFromSchema
-                            .setField(messageDescriptor.findFieldByName(fieldName), entry.getValue().toString());
-                } else if (fieldType.equals("int32")) {
-                    newMessageFromSchema
-                            .setField(messageDescriptor.findFieldByName(fieldName),
-                                    Integer.valueOf(entry.getValue().toString()));
-                } else if (fieldType.equals("float")) {
-                    newMessageFromSchema
-                            .setField(messageDescriptor.findFieldByName(fieldName),
-                                    Float.valueOf(entry.getValue().toString()));
-                } else {
-                    newMessageFromSchema
-                            .setField(messageDescriptor.findFieldByName(fieldName), entry.getValue());
-                }
+                FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
+                generateDynamicMessageForPrimitive(newMessageFromSchema, field, entry.getValue());
             }
         }
         return newMessageFromSchema.build();
