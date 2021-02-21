@@ -22,18 +22,20 @@ public function testSerialization() {
     Contact phone = {mobile: "123456", home: 1.234};
     Person president = { name: "Joe",  age:70, img:byteArray, contact:phone };
 
+    //io:println(president);
 
-    ProtoSerializer ser = new(Person);
-    //io:println(ser);
-    byte[] encoded = ser.serialize(president);
-
-    ProtoDeserializer des = new(Person);
-    io:println(des.deserialize(encoded));
-
-    //ProtoSerializer ser = new(IntArray);
+    //ProtoSerializer ser = new(Person);
     ////io:println(ser);
-    //byte[] encoded = ser.serialize([666, 1010]);
+    //byte[] encoded = ser.serialize(president);
+    //ProtoDeserializer des = new(Person);
+    //io:println(des.deserialize(encoded));
+
+    ProtoSerializer ser = new(StringArray);
+    //io:println(ser);
+    byte[] encoded = ser.serialize(["tharinda", "dilshan"]);
     //io:println(encoded);
+    ProtoDeserializer des = new(StringArray);
+    io:println(des.deserialize(encoded));
 
     //ProtoSerializer ser = new(string);
     //byte[] encoded = ser.serialize("tharinda");
