@@ -65,6 +65,8 @@ public class Deserializer {
     private static Object primitiveToBallerina(Object value) {
         if (value.getClass().getSimpleName().equals("String")) {
             return StringUtils.fromString(value.toString());
+        } else if(value.getClass().getSimpleName().equals("Float")) {
+            return Double.valueOf(value.toString());
         } else {
             return value;
         }

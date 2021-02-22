@@ -60,6 +60,7 @@ public class Serializer {
     private static void generateDynamicMessageForPrimitive(DynamicMessage.Builder messageBuilder,
                                                            FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getBallerinaToProtoMap(value.getClass().getSimpleName());
+
         if (fieldType.equals("string")) {
             messageBuilder.setField(field, value.toString());
         } else if (fieldType.equals("int32")) {

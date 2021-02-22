@@ -24,11 +24,12 @@ public function testSerialization() {
 
     //io:println(president);
 
-    ProtoSerializer ser = new(Person);
-    //io:println(ser);
-    byte[] encoded = ser.serialize(president);
-    ProtoDeserializer des = new(Person);
-    io:println(des.deserialize(encoded));
+    // Record
+    //ProtoSerializer ser = new(Person);
+    ////io:println(ser);
+    //byte[] encoded = ser.serialize(president);
+    //ProtoDeserializer des = new(Person);
+    //io:println(des.deserialize(encoded));
 
     // Array
     //ProtoSerializer ser = new(StringArray);
@@ -39,9 +40,9 @@ public function testSerialization() {
     //io:println(des.deserialize(encoded));
 
     // Primitive
-    //ProtoSerializer ser = new(string);
-    //byte[] encoded = ser.serialize("tharinda");
+    ProtoSerializer ser = new(float);
+    byte[] encoded = ser.serialize(6.666);
     //io:println(encoded);
-    ////ProtoDeserializer des = new(int);
-    ////io:println(des.deserialize(encoded));
+    ProtoDeserializer des = new(float);
+    io:println(des.deserialize(encoded));
 }
