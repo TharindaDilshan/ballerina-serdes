@@ -21,8 +21,20 @@ import java.util.Map;
  * @exception DescriptorValidationException
  */
 public class Serializer {
+
+    static final String SCHEMA_NAME = "schema";
+
+    static final String ATOMIC_FIELD_NAME = "atomicField";
+    static final String ARRAY_FIELD_NAME = "arrayField";
+
+    static final String BYTE = "bytes";
+    static final String STRING = "string";
+    static final String INTEGER = "int32";
+    static final String FLOAT = "float";
+    static final String ARRAY = "ArrayValueImpl";
+
     public static BArray serialize(BObject serializer, Object message) {
-        Descriptor schema = (Descriptor) serializer.getNativeData("schema");
+        Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
 
         DynamicMessage dynamicMessage = generateDynamicMessage(message, schema);
 //        System.out.println(dynamicMessage);
@@ -39,17 +51,17 @@ public class Serializer {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
-            FieldDescriptor field = messageDescriptor.findFieldByName("atomicField");
+            FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
             generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
             return  newMessageFromSchema.build();
         }
 
         // Non Primitive
-        if (dataType.equals("ArrayValueImpl")) {
+        if (dataType.equals(ARRAY)) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
-            FieldDescriptor field = messageDescriptor.findFieldByName("arrayField");
+            FieldDescriptor field = messageDescriptor.findFieldByName(ARRAY_FIELD_NAME);
             generateDynamicMessageForArray(newMessageFromSchema, field, dataObject);
             return  newMessageFromSchema.build();
         } else {
@@ -61,11 +73,11 @@ public class Serializer {
                                                            FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getBallerinaToProtoMap(value.getClass().getSimpleName());
 
-        if (fieldType.equals("string")) {
+        if (fieldType.equals(STRING)) {
             messageBuilder.setField(field, value.toString());
-        } else if (fieldType.equals("int32")) {
+        } else if (fieldType.equals(INTEGER)) {
             messageBuilder.setField(field, Integer.valueOf(value.toString()));
-        } else if (fieldType.equals("float")) {
+        } else if (fieldType.equals(FLOAT)) {
             messageBuilder.setField(field, Float.valueOf(value.toString()));
         } else {
             messageBuilder.setField(field, value);
@@ -79,7 +91,7 @@ public class Serializer {
         // String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
         String fieldType = field.getType().name().toLowerCase(Locale.ROOT);
 
-        if (fieldType.equals("bytes")) {
+        if (fieldType.equals(BYTE)) {
             messageBuilder.setField(field, bArray.getBytes());
             return;
         }
@@ -87,11 +99,11 @@ public class Serializer {
         for(long i = 0; i < len; i++) {
             Object element = bArray.get(i);
 
-            if (fieldType.equals("string")) {
+            if (fieldType.equals(STRING)) {
                 messageBuilder.addRepeatedField(field, element.toString());
-            } else if (fieldType.equals("int32")) {
+            } else if (fieldType.equals(INTEGER)) {
                 messageBuilder.addRepeatedField(field, Integer.valueOf(element.toString()));
-            } else if (fieldType.equals("float")) {
+            } else if (fieldType.equals(FLOAT)) {
                 messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
             } else {
                 messageBuilder.addRepeatedField(field, element);

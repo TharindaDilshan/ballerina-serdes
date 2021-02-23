@@ -19,11 +19,21 @@ import java.util.Map;
  */
 public class SchemaGenerator {
 
+    static final String SCHEMA_NAME = "schema";
+    static final String SCHEMA_BUILDER_NAME = "Schema.proto";
+
+    static final String ATOMIC_FIELD_NAME = "atomicField";
+    static final String ARRAY_FIELD_NAME = "arrayField";
+    static final String ARRAY_BUILDER_NAME = "ArrayBuilder";
+
+    static final String RECORD = "BRecordType";
+    static final String ARRAY = "BArrayType";
+    static final String BYTES = "bytes";
+
     public static void generateSchema(BObject serializer, BTypedesc balType) {
         ProtobufMessage protobufMessage = generateSchemaFromTypedesc(balType);
-//        System.out.println(protobufMessage.getProtobufMessage());
 
-        ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder("Schema.proto");
+        ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder(SCHEMA_BUILDER_NAME);
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
         Descriptors.Descriptor schema = null;
         try {
@@ -31,7 +41,7 @@ public class SchemaGenerator {
         } catch (Descriptors.DescriptorValidationException e) {
 
         }
-        serializer.addNativeData("schema", schema);
+        serializer.addNativeData(SCHEMA_NAME, schema);
     }
 
     private static ProtobufMessage generateSchemaFromTypedesc(BTypedesc typedesc) {
@@ -42,14 +52,14 @@ public class SchemaGenerator {
             String messageName = ballerinaToProtoMap.toUpperCase(Locale.getDefault());
 
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(messageName);
-            generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, "atomicField", 1);
+            generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) type;
 
-            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("ArrayBuilder");
-            generateSchemaForArray(messageBuilder, arrayType, "arrayField", 1);
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(ARRAY_BUILDER_NAME);
+            generateSchemaForArray(messageBuilder, arrayType, ARRAY_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else {
@@ -67,7 +77,7 @@ public class SchemaGenerator {
                                                String name, int number) {
         String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
 
-        if (elementType.equals("bytes")) {
+        if (elementType.equals(BYTES)) {
             messageBuilder.addField("required", elementType, name, number);
         } else {
             messageBuilder.addField("repeated", elementType, name, number);
@@ -83,14 +93,14 @@ public class SchemaGenerator {
             Type fieldType = entry.getValue().getFieldType();
             String fieldName = entry.getValue().getFieldName();
 
-            if (fieldType.getClass().getSimpleName().equals("BRecordType")) {
+            if (fieldType.getClass().getSimpleName().equals(RECORD)) {
                 RecordType recordType = (RecordType) fieldType;
                 ProtobufMessage nestedMessage = generateSchemaForRecord(recordType.getFields(), fieldName);
                 messageBuilder.addNestedMessage(nestedMessage);
                 messageBuilder
                         .addField("required", fieldName.toUpperCase(Locale.getDefault()), fieldName, number);
 
-            } else if (fieldType.getClass().getSimpleName().equals("BArrayType")) {
+            } else if (fieldType.getClass().getSimpleName().equals(ARRAY)) {
                 ArrayType arrayType = (ArrayType) fieldType;
                 generateSchemaForArray(messageBuilder, arrayType, fieldName, number);
             } else {
