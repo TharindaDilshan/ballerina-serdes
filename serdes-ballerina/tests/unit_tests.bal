@@ -173,3 +173,17 @@ public function testNestedRecord() {
 
     test:assertEquals(deserializedPresident, president);
 }
+
+@test:Config{}
+public function testArrayOfRecords() {
+    Contact phone1 = {mobile: "+123456", home: "789"};
+    Contact phone2 = {mobile: "+456789", home: "123"};
+
+    Contact[] contacts = [phone1, phone2];
+
+    ProtoSerializer ser = new(RecordArray);
+    byte[] encoded = ser.serialize(contacts);
+
+    ProtoDeserializer des = new(RecordArray);
+    test:assertEquals(des.deserialize(encoded), contacts);
+}
