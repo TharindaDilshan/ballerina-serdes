@@ -2,14 +2,11 @@ plugins {
     id 'java'
     id 'checkstyle'
     id 'com.github.spotbugs'
-    // id 'eclipse'
-    // id 'com.google.protobuf'
 }
 
 dependencies {
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: "${protobufVersion}"
     compile group: 'com.google.protobuf', name: 'protobuf-java-util', version: "${protobufVersion}"
-    // compile 'com.google.protobuf:protobuf-gradle-plugin:0.8.14'
 
     checkstyle project(':build-config:checkstyle')
     checkstyle "com.puppycrawl.tools:checkstyle:${checkstylePluginVersion}"

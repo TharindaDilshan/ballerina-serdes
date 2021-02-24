@@ -77,10 +77,19 @@ public class SchemaGenerator {
                                                String name, int number) {
         String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
 
-        if (elementType.equals(BYTES)) {
-            messageBuilder.addField("required", elementType, name, number);
+        if (elementType != null) {
+            if (elementType.equals(BYTES)) {
+                messageBuilder.addField("required", elementType, name, number);
+            } else {
+                messageBuilder.addField("repeated", elementType, name, number);
+            }
         } else {
-            messageBuilder.addField("repeated", elementType, name, number);
+            RecordType recordType = (RecordType) arrayType.getElementType();
+            String[] elementNameHolder = arrayType.getElementType().getName().split(":");
+            elementType = elementNameHolder[elementNameHolder.length - 1];
+
+            messageBuilder.addNestedMessage(generateSchemaForRecord(recordType.getFields(), recordType.getName()));
+            messageBuilder.addField("repeated", elementType.toUpperCase(Locale.getDefault()), name, number);
         }
     }
 

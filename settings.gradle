@@ -13,12 +13,11 @@ pluginManagement {
         id "com.github.johnrengelman.shadow" version "${shadowJarPluginVersion}"
         id "de.undercouch.download" version "${downloadPluginVersion}"
         id "net.researchgate.release" version "${releasePluginVersion}"
-        id "com.google.protobuf" version "${protobufPluginVersion}"
     }
 }
 
 plugins {
-   id "com.gradle.enterprise" version "3.2"
+    id "com.gradle.enterprise" version "3.2"
 }
 
 rootProject.name = 'module-ballerina-serdes'

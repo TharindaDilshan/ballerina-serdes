@@ -32,6 +32,7 @@ public class Serializer {
     static final String INTEGER = "int32";
     static final String FLOAT = "float";
     static final String ARRAY = "ArrayValueImpl";
+    static final String MESSAGE = "message";
 
     public static BArray serialize(BObject serializer, Object message) {
         Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
@@ -105,6 +106,13 @@ public class Serializer {
                 messageBuilder.addRepeatedField(field, Integer.valueOf(element.toString()));
             } else if (fieldType.equals(FLOAT)) {
                 messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
+            } else if (fieldType.equals(MESSAGE)) {
+                // Array of records *** (revisit logic)
+                for (Descriptor elementSchema : field.getContainingType().getNestedTypes()) {
+                    DynamicMessage elementDynamicMessage =
+                            generateDynamicMessageForRecord((BMap<BString, Object>) element, elementSchema);
+                    messageBuilder.addRepeatedField(field, elementDynamicMessage);
+                }
             } else {
                 messageBuilder.addRepeatedField(field, element);
             }

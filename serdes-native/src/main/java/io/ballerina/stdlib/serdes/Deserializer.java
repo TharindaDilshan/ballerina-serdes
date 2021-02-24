@@ -1,14 +1,13 @@
 package io.ballerina.stdlib.serdes;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors;
+import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.DynamicMessage;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
 import io.ballerina.runtime.api.utils.StringUtils;
@@ -26,6 +25,7 @@ public class Deserializer {
     static final String BYTE = "LiteralByteString";
     static final String STRING = "String";
     static final String FLOAT = "Float";
+    static final String DYNAMIC_MESSAGE = "DynamicMessage";
 
     static final String SCHEMA_NAME = "schema";
 
@@ -59,7 +59,10 @@ public class Deserializer {
             }
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             for (Map.Entry<Descriptors.FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
-                return arrayToBallerina(entry.getValue());
+//                System.out.println(entry.getKey().getContainingType());
+//                System.out.println(entry.getKey().getType());
+//                System.out.println(entry.getKey().getContainingType());
+                return arrayToBallerina(entry.getValue(), type);
             }
         } else {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type);
@@ -80,7 +83,7 @@ public class Deserializer {
         }
     }
 
-    private static Object arrayToBallerina(Object value) {
+    private static Object arrayToBallerina(Object value, Type type) {
         if (value.getClass().getSimpleName().equals(BYTE)) {
             ByteString byteString = (ByteString) value;
 
@@ -90,7 +93,9 @@ public class Deserializer {
 
             collection  = (Collection) collection.stream()
                     .map(s -> s.getClass().getSimpleName().equals(STRING) ? StringUtils.fromString(s.toString()) :
-                            s.getClass().getSimpleName().equals(FLOAT) ? Double.valueOf(s.toString()) : s)
+                            s.getClass().getSimpleName().equals(FLOAT) ? Double.valueOf(s.toString()) :
+                            s.getClass().getSimpleName().equals(DYNAMIC_MESSAGE) ?
+                                    processRecordElement(s, type) : s)
                     .collect(Collectors.toList());
 
             return ValueCreator.createArrayValue(
@@ -107,19 +112,19 @@ public class Deserializer {
             Object value = entry.getValue();
             if (value instanceof DynamicMessage) {
                 DynamicMessage msg = (DynamicMessage) entry.getValue();
-                String recordName = entry.getKey().getName();
+//                String recordName = entry.getKey().getName();
                 Map<String, Object> nestedMap = recordToBallerina(msg, type);
-
+                String recordTypeName = getRecordTypeName(type, entry.getKey().getName());
                 BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
-                                       type.getPackage(),
-                        recordName.substring(0, 1).toUpperCase(Locale.ROOT) + recordName.substring(1),
-                                       nestedMap
+                                        type.getPackage(),
+                                        recordTypeName,
+                                        nestedMap
                 );
 
                 map.put(entry.getKey().getName(), nestedRecord);
 
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
-                Object handleArray = arrayToBallerina(entry.getValue());
+                Object handleArray = arrayToBallerina(entry.getValue(), type);
                 map.put(entry.getKey().getName(), handleArray);
             } else {
                 Object handlePrimitive = primitiveToBallerina(entry.getValue());
@@ -127,7 +132,31 @@ public class Deserializer {
             }
         }
 
-
         return map;
+    }
+
+    private static String getRecordTypeName(Type type, String fieldName) {
+        RecordType recordType = (RecordType) type;
+        for (Map.Entry<String, Field> entry: recordType.getFields().entrySet()) {
+            if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG && entry.getKey().equals(fieldName)) {
+                return entry.getValue().getFieldType().getName();
+            } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
+                return getRecordTypeName(entry.getValue().getFieldType(), fieldName);
+            } else {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private static Object processRecordElement(Object s, Type type) {
+        ArrayType arrayType = (ArrayType) type;
+        Map<String, Object> mapObject = recordToBallerina((DynamicMessage) s, type);
+        Type t = arrayType.getElementType();
+        System.out.println();
+        System.out.println(t.getClass().getSimpleName());
+
+        return ValueCreator.createRecordValue(t.getPackage(), t.getName(), mapObject);
     }
 }

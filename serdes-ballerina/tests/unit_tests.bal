@@ -3,7 +3,7 @@ import ballerina/test;
 
 type Contact record {
     string mobile;
-    //float home;
+    string home;
 };
 
 type Person record {
@@ -14,23 +14,41 @@ type Person record {
    Contact contact;
 };
 
+type Primitive record {
+    string stringValue;
+    int intValue;
+    float floatValue;
+    boolean boolValue;
+};
+
+type Arrays record {
+    string[] stringArray;
+    int[] intArray;
+    float[] floatArray;
+    boolean[] boolArray;
+    byte[] byteArray;
+};
+
 type StringArray string[];
 type IntArray int[];
 type ByteArray byte[];
 type FloatArray float[];
+type BoolArray boolean[];
+
+type RecordArray Contact[];
 
 @test:Config{}
 public function testSerialization() {
-    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
-    Contact phone = {mobile: "+123456"};
-    Person president = { name: "Joe",  age:70, img:byteArray, random:1.666, contact:phone };
+    Contact phone1 = {mobile: "+123456", home: "789"};
+    Contact phone2 = {mobile: "+456789", home: "123"};
 
-    //io:println(president);
+    Contact[] contacts = [phone1, phone2];
 
-    ProtoSerializer ser = new(Person);
-    byte[] encoded = ser.serialize(president);
-    ProtoDeserializer des = new(Person);
-    test:assertEquals(des.deserialize(encoded), president);
+    ProtoSerializer ser = new(RecordArray);
+    byte[] encoded = ser.serialize(contacts);
+    //
+    ProtoDeserializer des = new(RecordArray);
+    //test:assertEquals(des.deserialize(encoded), president);
     io:println(des.deserialize(encoded));
 }
 
@@ -100,4 +118,58 @@ public function testFloatArray() {
     byte[] encoded = ser.serialize([0.123, 4.968, 3.256]);
     ProtoDeserializer des = new(FloatArray);
     test:assertEquals(des.deserialize(encoded), [0.123, 4.968, 3.256]);
+}
+
+@test:Config{}
+public function testBooleanArray() {
+    ProtoSerializer ser = new(BoolArray);
+    byte[] encoded = ser.serialize([true, false, true, false]);
+    ProtoDeserializer des = new(BoolArray);
+    test:assertEquals(des.deserialize(encoded), [true, false, true, false]);
+}
+
+@test:Config{}
+public function testRecordWithPrimitives() {
+
+    Primitive primitiveRecord = { stringValue: "serdes", intValue: 192, floatValue: 192.168, boolValue: false };
+
+    ProtoSerializer ser = new(Primitive);
+    byte[] encoded = ser.serialize(primitiveRecord);
+
+    ProtoDeserializer des = new(Primitive);
+    test:assertEquals(des.deserialize(encoded), primitiveRecord);
+}
+
+@test:Config{}
+public function testRecordWithArrays() {
+
+    Arrays arrayRecord = {
+        stringArray: ["Jane", "Doe"],
+        intArray: [1, 2, 3],
+        floatArray: [0.123, 4.968, 3.256],
+        boolArray: [true, false, true, false],
+        byteArray: base16 `aeeecdefabcd12345567888822`
+    };
+
+    ProtoSerializer ser = new(Arrays);
+    byte[] encoded = ser.serialize(arrayRecord);
+
+    ProtoDeserializer des = new(Arrays);
+    test:assertEquals(des.deserialize(encoded), arrayRecord);
+}
+
+@test:Config{}
+public function testNestedRecord() {
+    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
+    Contact phone = {mobile: "+94111111111", home: "+94777777777"};
+
+    Person president = { name: "Joe",  age:70, img:byteArray, random:1.666, contact:phone };
+
+    ProtoSerializer ser = new(Person);
+    byte[] encoded = ser.serialize(president);
+
+    ProtoDeserializer des = new(Person);
+    Person deserializedPresident = <Person> des.deserialize(encoded);
+
+    test:assertEquals(deserializedPresident, president);
 }

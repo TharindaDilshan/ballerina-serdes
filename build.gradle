@@ -16,11 +16,10 @@
  */
 
 plugins {
-    id 'com.github.spotbugs-base'
-    id 'com.github.johnrengelman.shadow'
-    id 'de.undercouch.download'
-    id 'net.researchgate.release'
-    id 'com.google.protobuf'
+    id "com.github.spotbugs-base"
+    id "com.github.johnrengelman.shadow"
+    id "de.undercouch.download"
+    id "net.researchgate.release"
 }
 
 allprojects {
@@ -29,7 +28,6 @@ allprojects {
 
     apply plugin: 'maven-publish'
     apply plugin: 'java'
-    apply plugin: 'com.google.protobuf'
 
     repositories {
         mavenLocal()
@@ -55,6 +53,8 @@ allprojects {
     }
 }
 
+def moduleVersion = project.version.replace("-SNAPSHOT", "")
+
 subprojects {
     apply plugin: 'java'
 
@@ -70,13 +70,13 @@ subprojects {
     release {
         // Disable check snapshots temporarily
         buildTasks = []
-        failOnSnapshotDependencies = false
-        failOnCommitNeeded = false
+        failOnSnapshotDependencies = true
         versionPropertyFile = 'gradle.properties'
         tagTemplate = 'v${version}'
         git {
             // To release from any branch
-            requireBranch = null
+            requireBranch = "release-${moduleVersion}"
+            pushToRemote = 'origin'
         }
     }
 }
