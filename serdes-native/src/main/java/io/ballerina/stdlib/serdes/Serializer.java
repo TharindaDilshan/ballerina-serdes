@@ -56,7 +56,6 @@ public class Serializer {
         Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
 
         DynamicMessage dynamicMessage = generateDynamicMessage(message, schema);
-//        System.out.println(dynamicMessage);
         BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
 
         return bArray;
@@ -107,7 +106,6 @@ public class Serializer {
                                                                  FieldDescriptor field, Object value) {
         BArray bArray = (BArray) value;
         long len = bArray.size();
-        // String fieldType = DataTypeMapper.getProtoFieldType(bArray.getElementType().toString());
         String fieldType = field.getType().name().toLowerCase(Locale.ROOT);
 
         if (fieldType.equals(BYTE)) {
@@ -125,12 +123,12 @@ public class Serializer {
             } else if (fieldType.equals(FLOAT)) {
                 messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
             } else if (fieldType.equals(MESSAGE)) {
-                // Array of records *** (revisit logic)
-                for (Descriptor elementSchema : field.getContainingType().getNestedTypes()) {
-                    DynamicMessage elementDynamicMessage =
-                            generateDynamicMessageForRecord((BMap<BString, Object>) element, elementSchema);
-                    messageBuilder.addRepeatedField(field, elementDynamicMessage);
-                }
+                String nestedTypeName = bArray.getElementType().getName().toUpperCase(Locale.ROOT);
+                Descriptor elementSchema = field.getContainingType().findNestedTypeByName(nestedTypeName);
+                DynamicMessage elementDynamicMessage =
+                        generateDynamicMessageForRecord((BMap<BString, Object>) element, elementSchema);
+
+                messageBuilder.addRepeatedField(field, elementDynamicMessage);
             } else {
                 messageBuilder.addRepeatedField(field, element);
             }

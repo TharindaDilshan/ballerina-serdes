@@ -1,3 +1,19 @@
+// Copyright (c) 2021, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+//
+// WSO2 Inc. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 import ballerina/io;
 import ballerina/test;
 
@@ -6,12 +22,30 @@ type Contact record {
     string home;
 };
 
+type Street record {
+    string street1;
+    string street2;
+};
+
+type Address record {
+    Street street;
+    string country;
+};
+
 type Person record {
    string name;
    int age;
    byte[] img;
    float random;
    Contact contact;
+};
+
+type Student record {
+   string name;
+   int age;
+   byte[] img;
+   Contact[] contacts;
+   Address address;
 };
 
 type Primitive record {
@@ -36,21 +70,6 @@ type FloatArray float[];
 type BoolArray boolean[];
 
 type RecordArray Contact[];
-
-@test:Config{}
-public function testSerialization() {
-    Contact phone1 = {mobile: "+123456", home: "789"};
-    Contact phone2 = {mobile: "+456789", home: "123"};
-
-    Contact[] contacts = [phone1, phone2];
-
-    ProtoSerializer ser = new(RecordArray);
-    byte[] encoded = ser.serialize(contacts);
-    //
-    ProtoDeserializer des = new(RecordArray);
-    //test:assertEquals(des.deserialize(encoded), president);
-    io:println(des.deserialize(encoded));
-}
 
 @test:Config{}
 public function testPrimitiveFloat() {
@@ -186,4 +205,27 @@ public function testArrayOfRecords() {
 
     ProtoDeserializer des = new(RecordArray);
     test:assertEquals(des.deserialize(encoded), contacts);
+}
+
+@test:Config{}
+public function testComplexRecord() {
+    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
+
+    Contact phone1 = {mobile: "+123456", home: "789"};
+    Contact phone2 = {mobile: "+456789", home: "123"};
+
+    Street street = { street1: "random lane", street2: "random street" };
+
+    Address address = { street: street, country: "Sri Lanka" };
+
+    Contact[] nums = [phone1, phone2];
+
+    Student john = { name: "John Doe", age: 21, img: byteArray, contacts: nums, address: address };
+
+    ProtoSerializer ser = new(Student);
+    byte[] encoded = ser.serialize(john);
+
+    ProtoDeserializer des = new(Student);
+    io:println(des.deserialize(encoded));
+    //test:assertEquals(des.deserialize(encoded), john);
 }

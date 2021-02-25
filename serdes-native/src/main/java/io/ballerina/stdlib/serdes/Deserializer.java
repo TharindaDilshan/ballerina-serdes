@@ -55,7 +55,7 @@ public class Deserializer {
         
         try {
             dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
-//            System.out.println(dynamicMessage);
+
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType);
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
@@ -109,12 +109,12 @@ public class Deserializer {
         } else {
             Collection collection = (Collection) value;
 
-            collection  = (Collection) collection.stream()
-                    .map(s -> s.getClass().getSimpleName().equals(STRING) ? StringUtils.fromString(s.toString()) :
-                            s.getClass().getSimpleName().equals(FLOAT) ? Double.valueOf(s.toString()) :
-                            s.getClass().getSimpleName().equals(DYNAMIC_MESSAGE) ?
-                                    processRecordElement(s, type) : s)
-                    .collect(Collectors.toList());
+            collection  = (Collection) collection.stream().map(s ->
+                                s.getClass().getSimpleName().equals(STRING) ? StringUtils.fromString(s.toString()) :
+                                s.getClass().getSimpleName().equals(FLOAT) ? Double.valueOf(s.toString()) :
+                                s.getClass().getSimpleName().equals(DYNAMIC_MESSAGE) ?
+                                                                            processRecordElement(s, type) : s)
+                                .collect(Collectors.toList());
 
             return ValueCreator.createArrayValue(
                     collection.toArray(),
@@ -130,9 +130,10 @@ public class Deserializer {
             Object value = entry.getValue();
             if (value instanceof DynamicMessage) {
                 DynamicMessage msg = (DynamicMessage) entry.getValue();
-//                String recordName = entry.getKey().getName();
+
                 Map<String, Object> nestedMap = recordToBallerina(msg, type);
                 String recordTypeName = getRecordTypeName(type, entry.getKey().getName());
+
                 BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
                                         type.getPackage(),
                                         recordTypeName,
@@ -142,10 +143,20 @@ public class Deserializer {
                 map.put(entry.getKey().getName(), nestedRecord);
 
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
-                Object handleArray = arrayToBallerina(entry.getValue(), type);
-                map.put(entry.getKey().getName(), handleArray);
+                if (!value.getClass().getSimpleName().equals(BYTE)) {
+                    Type elementType = getArrayElementType(type, entry.getKey().getName());
+                    Object handleArray = arrayToBallerina(entry.getValue(), elementType);
+
+                    map.put(entry.getKey().getName(), handleArray);
+                } else {
+                    Object handleArray = arrayToBallerina(entry.getValue(), type);
+
+                    map.put(entry.getKey().getName(), handleArray);
+                }
+
             } else {
                 Object handlePrimitive = primitiveToBallerina(entry.getValue());
+
                 map.put(entry.getKey().getName(), handlePrimitive);
             }
         }
@@ -160,6 +171,24 @@ public class Deserializer {
                 return entry.getValue().getFieldType().getName();
             } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
                 return getRecordTypeName(entry.getValue().getFieldType(), fieldName);
+            } else {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private static Type getArrayElementType(Type type, String fieldName) {
+        RecordType recordType = (RecordType) type;
+
+        for (Map.Entry<String, Field> entry: recordType.getFields().entrySet()) {
+            if (entry.getValue().getFieldType().getTag() == TypeTags.ARRAY_TAG && entry.getKey().equals(fieldName)) {
+                ArrayType arrayType = (ArrayType) entry.getValue().getFieldType();
+
+                return arrayType.getElementType();
+            } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
+                return getArrayElementType(entry.getValue().getFieldType(), fieldName);
             } else {
                 continue;
             }
