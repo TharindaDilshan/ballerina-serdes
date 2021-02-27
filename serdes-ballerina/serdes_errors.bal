@@ -14,24 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/jballerina.java;
+// Returns for unsupported data types
+public type UnsupportedTypeError distinct error;
 
-class ProtoDeserializer {
-    *Deserializer;
 
-    private typedesc<anydata> dataType;
-
-    public function init(typedesc<anydata> ballerinaDataType) {
-        self.dataType = ballerinaDataType;
-        generateSchema(self, ballerinaDataType);
-    }
-
-    public function deserialize(byte[] encodedMessage) returns anydata {
-        return deserialize(self, encodedMessage, self.dataType);
-    }
-}
-
-public function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns anydata =
-@java:Method {
-    'class: "io.ballerina.stdlib.serdes.Deserializer"
-}  external;
+//public type

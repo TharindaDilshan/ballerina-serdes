@@ -14,6 +14,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+import ballerina/jballerina.java;
+
 class ProtoSerializer {
     *Serializer;
 
@@ -25,3 +27,11 @@ class ProtoSerializer {
         return serialize(self, data);
     }
 }
+
+public function generateSchema(Serializer | Deserializer serdes, typedesc<anydata> T) = @java:Method {
+	'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
+}  external;
+
+public function serialize(Serializer ser, anydata data) returns byte[] = @java:Method {
+	'class: "io.ballerina.stdlib.serdes.Serializer"
+}  external;

@@ -66,7 +66,7 @@ public class SchemaGenerator {
         Type type = typedesc.getDescribingType();
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
-            String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(typedesc.getDescribingType().getName());
+            String ballerinaToProtoMap = DataTypeMapper.getProtoType(typedesc.getDescribingType().getName());
             String messageName = ballerinaToProtoMap.toUpperCase(Locale.getDefault());
 
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(messageName);
@@ -93,7 +93,7 @@ public class SchemaGenerator {
 
     private static void generateSchemaForArray(ProtobufMessageBuilder messageBuilder, ArrayType arrayType,
                                                String name, int number) {
-        String elementType = DataTypeMapper.getBallerinaToProtoMap(arrayType.getElementType().toString());
+        String elementType = DataTypeMapper.getProtoType(arrayType.getElementType().toString());
 
         if (elementType != null) {
             if (elementType.equals(BYTES)) {
@@ -131,7 +131,7 @@ public class SchemaGenerator {
                 ArrayType arrayType = (ArrayType) fieldType;
                 generateSchemaForArray(messageBuilder, arrayType, fieldName, number);
             } else {
-                String protoFieldType = DataTypeMapper.getBallerinaToProtoMap(fieldType.toString());
+                String protoFieldType = DataTypeMapper.getProtoType(fieldType.toString());
                 generateSchemaForPrimitive(messageBuilder, protoFieldType, fieldName, number);
             }
             number++;

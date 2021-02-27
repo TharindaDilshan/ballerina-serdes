@@ -63,7 +63,7 @@ public class Serializer {
 
     private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema) {
         String dataType = dataObject.getClass().getSimpleName();
-        String ballerinaToProtoMap = DataTypeMapper.getBallerinaToProtoMap(dataType);
+        String ballerinaToProtoMap = DataTypeMapper.getProtoType(dataType);
 
         if (ballerinaToProtoMap != null) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
@@ -89,7 +89,7 @@ public class Serializer {
 
     private static void generateDynamicMessageForPrimitive(DynamicMessage.Builder messageBuilder,
                                                            FieldDescriptor field, Object value) {
-        String fieldType = DataTypeMapper.getBallerinaToProtoMap(value.getClass().getSimpleName());
+        String fieldType = DataTypeMapper.getProtoType(value.getClass().getSimpleName());
 
         if (fieldType.equals(STRING)) {
             messageBuilder.setField(field, value.toString());
