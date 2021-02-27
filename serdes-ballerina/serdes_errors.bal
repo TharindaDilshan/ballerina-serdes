@@ -14,8 +14,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-// Returns for unsupported data types
-public type UnsupportedTypeError distinct error;
+// Returns for schema generation failures
+public type SchemaGenerationError distinct error;
 
+// Returns for serialization errors
+public type SerializationError distinct error;
 
-//public type
+// Returns for deserialization errors
+public type DeserializationError distinct error;

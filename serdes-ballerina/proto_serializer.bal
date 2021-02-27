@@ -19,8 +19,8 @@ import ballerina/jballerina.java;
 class ProtoSerializer {
     *Serializer;
 
-    public function init(typedesc<anydata> ballerinaDataType) {
-        generateSchema(self, ballerinaDataType);
+    public function init(typedesc<anydata> ballerinaDataType) returns SchemaGenerationError? {
+        SchemaGenerationError? err = generateSchema(self, ballerinaDataType);
     }
 
     public function serialize(anydata data) returns byte[] {
@@ -28,7 +28,8 @@ class ProtoSerializer {
     }
 }
 
-public function generateSchema(Serializer | Deserializer serdes, typedesc<anydata> T) = @java:Method {
+public function generateSchema(Serializer | Deserializer serdes, typedesc<anydata> T) returns SchemaGenerationError? =
+@java:Method {
 	'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
 }  external;
 

@@ -21,9 +21,9 @@ class ProtoDeserializer {
 
     private typedesc<anydata> dataType;
 
-    public function init(typedesc<anydata> ballerinaDataType) {
+    public function init(typedesc<anydata> ballerinaDataType) returns SchemaGenerationError? {
         self.dataType = ballerinaDataType;
-        generateSchema(self, ballerinaDataType);
+        SchemaGenerationError? err = generateSchema(self, ballerinaDataType);
     }
 
     public function deserialize(byte[] encodedMessage) returns anydata {

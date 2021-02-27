@@ -30,6 +30,9 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.util.Locale;
 import java.util.Map;
 
+import static io.ballerina.stdlib.serdes.Constants.SCHEMA_GENERATION_ERROR;
+import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
+
 /**
  * Schema generator class.
  *
@@ -48,8 +51,14 @@ public class SchemaGenerator {
     static final String ARRAY = "BArrayType";
     static final String BYTES = "bytes";
 
-    public static void generateSchema(BObject serializer, BTypedesc balType) {
-        ProtobufMessage protobufMessage = generateSchemaFromTypedesc(balType);
+    public static Object generateSchema(BObject serializer, BTypedesc balType) {
+        ProtobufMessage protobufMessage;
+
+        try {
+            protobufMessage = generateSchemaFromTypedesc(balType);
+        } catch (Exception e) {
+            return createSerdesError("Unsupported data type: " + e.getMessage(), SCHEMA_GENERATION_ERROR);
+        }
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder(SCHEMA_BUILDER_NAME);
         schemaBuilder.addMessageToProtoSchema(protobufMessage);
@@ -57,9 +66,11 @@ public class SchemaGenerator {
         try {
             schema = schemaBuilder.build();
         } catch (Descriptors.DescriptorValidationException e) {
-
+            return createSerdesError("Failed to generate schema: " + e.getMessage(), SCHEMA_GENERATION_ERROR);
         }
         serializer.addNativeData(SCHEMA_NAME, schema);
+
+        return null;
     }
 
     private static ProtobufMessage generateSchemaFromTypedesc(BTypedesc typedesc) {

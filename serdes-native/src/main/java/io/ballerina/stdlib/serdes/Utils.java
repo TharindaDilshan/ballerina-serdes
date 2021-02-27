@@ -20,6 +20,9 @@ package io.ballerina.stdlib.serdes;
 
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.Module;
+import io.ballerina.runtime.api.creators.ErrorCreator;
+import io.ballerina.runtime.api.utils.StringUtils;
+import io.ballerina.runtime.api.values.BError;
 
 /**
  * Utility functions of SerDes module.
@@ -36,5 +39,9 @@ public class Utils {
 
     public static Module getModule() {
         return serdesModule;
+    }
+
+    public static BError createSerdesError(String message, String typeId) {
+        return ErrorCreator.createDistinctError(typeId, getModule(), StringUtils.fromString(message));
     }
 }
