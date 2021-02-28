@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
-* DataTypeMapper Class.
+* Mapper class to map Java and Ballerina data types to Proto3 field types.
 *
 */
 public class DataTypeMapper {

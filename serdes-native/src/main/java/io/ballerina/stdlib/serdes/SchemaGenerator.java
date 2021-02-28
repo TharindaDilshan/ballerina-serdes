@@ -34,9 +34,7 @@ import static io.ballerina.stdlib.serdes.Constants.SCHEMA_GENERATION_ERROR;
 import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
 
 /**
- * Schema generator class.
- *
- * @return Schema.
+ * Generates a Protobuf schema for a given data type.
  */
 public class SchemaGenerator {
 
@@ -51,7 +49,14 @@ public class SchemaGenerator {
     static final String ARRAY = "BArrayType";
     static final String BYTES = "bytes";
 
-    public static Object generateSchema(BObject serializer, BTypedesc balType) {
+    /**
+     * Creates a schema for a given data type and adds to native data.
+     *
+     * @param serdes  Serializer or Deserializer object.
+     * @param balType Data type that is being serialized.
+     * @return {@code BError}, if there are schema generation errors, null otherwise.
+     */
+    public static Object generateSchema(BObject serdes, BTypedesc balType) {
         ProtobufMessage protobufMessage;
 
         try {
@@ -68,7 +73,7 @@ public class SchemaGenerator {
         } catch (Descriptors.DescriptorValidationException e) {
             return createSerdesError("Failed to generate schema: " + e.getMessage(), SCHEMA_GENERATION_ERROR);
         }
-        serializer.addNativeData(SCHEMA_NAME, schema);
+        serdes.addNativeData(SCHEMA_NAME, schema);
 
         return null;
     }

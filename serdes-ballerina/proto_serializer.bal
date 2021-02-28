@@ -16,13 +16,22 @@
 
 import ballerina/jballerina.java;
 
+# Represents ProtoSerializer object.
 class ProtoSerializer {
     *Serializer;
 
+    # Generates a schema for a given data type.
+    #
+    # + ballerinaDataType - The data type of the value that needs to be serialized
+    # + return - `serdes:SchemaGenerationError` if the data type is not supported else nil
     public function init(typedesc<anydata> ballerinaDataType) returns SchemaGenerationError? {
         SchemaGenerationError? err = generateSchema(self, ballerinaDataType);
     }
 
+    # Serializes a given value.
+    #
+    # + data - The value that is being serialized
+    # + return - A byte array corresponding to the encoded value
     public function serialize(anydata data) returns byte[] {
         return serialize(self, data);
     }

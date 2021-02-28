@@ -16,16 +16,27 @@
 
 import ballerina/jballerina.java;
 
+# Represents ProtoDeserializer object.
+#
+# + dataType - The data type of the value that needs to be serialized
 class ProtoDeserializer {
     *Deserializer;
 
     private typedesc<anydata> dataType;
 
+    # Generates a schema for a given data type.
+    #
+    # + ballerinaDataType - The data type of the value that needs to be serialized
+    # + return - `serdes:SchemaGenerationError` if the data type is not supported else nil
     public function init(typedesc<anydata> ballerinaDataType) returns SchemaGenerationError? {
         self.dataType = ballerinaDataType;
         SchemaGenerationError? err = generateSchema(self, ballerinaDataType);
     }
 
+    # Deserializes a given array of bytes.
+    #
+    # + encodedMessage - The encoded byte array of the value that is serialized
+    # + return - The value represented by the encoded byte array
     public function deserialize(byte[] encodedMessage) returns anydata {
         return deserialize(self, encodedMessage, self.dataType);
     }

@@ -32,9 +32,9 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Serializer class to create Dynamic messages.
+ * Serializer class to create a byte array for a value.
  *
- * @return Schema.
+ * @return BArray.
  * @throws DescriptorValidationException
  * @exception DescriptorValidationException
  */
@@ -52,6 +52,13 @@ public class Serializer {
     static final String ARRAY = "ArrayValueImpl";
     static final String MESSAGE = "message";
 
+    /**
+     * Creates a BArray for given data after serializing.
+     *
+     * @param serializer  Serializer object.
+     * @param message Data that is being serialized.
+     * @return Byte array of the serialized value.
+     */
     public static BArray serialize(BObject serializer, Object message) {
         Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
 

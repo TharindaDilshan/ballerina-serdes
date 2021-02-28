@@ -18,8 +18,11 @@
 
 package io.ballerina.stdlib.serdes;
 
-import com.google.protobuf.*;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.DynamicMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
@@ -35,8 +38,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Serializer class to create Dynamic messages.
+ * Deserializer class to generate an object from a byte array.
  *
+ * @return Object
  */
 public class Deserializer {
 
@@ -45,8 +49,19 @@ public class Deserializer {
     static final String FLOAT = "Float";
     static final String DYNAMIC_MESSAGE = "DynamicMessage";
 
+    static final String ATOMIC_FIELD_NAME = "atomicField";
+    static final String ARRAY_FIELD_NAME = "arrayField";
+
     static final String SCHEMA_NAME = "schema";
 
+    /**
+     * Creates an anydata object from a byte array after deserializing.
+     *
+     * @param des  Deserializer object.
+     * @param encodedMessage Byte array corresponding to encoded data.
+     * @param dataType Data type of the encoded value.
+     * @return anydata object.
+     */
     public static Object deserialize(BObject des, BArray encodedMessage, BTypedesc dataType) {
         Descriptor schema = (Descriptor) des.getNativeData(SCHEMA_NAME);
 
@@ -56,7 +71,7 @@ public class Deserializer {
         try {
             dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
 
-            object = dynamicMessageToBallerinaType(dynamicMessage, dataType);
+            object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
         } catch (InvalidProtocolBufferException e) {
             e.printStackTrace();
         }
@@ -68,27 +83,25 @@ public class Deserializer {
         return DynamicMessage.parseFrom(schema, encodedMessage.getBytes());
     }
 
-    private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc) {
+    private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc,
+                                                        Descriptor schema) {
         Type type = typedesc.getDescribingType();
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
-            for (Map.Entry<Descriptors.FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
-                return primitiveToBallerina(entry.getValue());
-            }
-        } else if (type.getTag() == TypeTags.ARRAY_TAG) {
-            for (Map.Entry<Descriptors.FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
-                ArrayType arrayType = (ArrayType) type;
-                Type elementType = arrayType.getElementType();
+            FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
 
-                return arrayToBallerina(entry.getValue(), elementType);
-            }
+            return primitiveToBallerina(dynamicMessage.getField(fieldDescriptor));
+        } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+            ArrayType arrayType = (ArrayType) type;
+            Type elementType = arrayType.getElementType();
+            FieldDescriptor fieldDescriptor = schema.findFieldByName(ARRAY_FIELD_NAME);
+
+            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType);
         } else {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
         }
-
-        return null;
     }
 
     private static Object primitiveToBallerina(Object value) {
@@ -126,7 +139,7 @@ public class Deserializer {
     private static Map<String, Object> recordToBallerina(DynamicMessage dynamicMessage, Type type) {
         Map<String, Object> map = new HashMap();
 
-        for (Map.Entry<Descriptors.FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
+        for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
             Object value = entry.getValue();
             if (value instanceof DynamicMessage) {
                 DynamicMessage msg = (DynamicMessage) entry.getValue();
