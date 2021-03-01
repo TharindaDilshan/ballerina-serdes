@@ -24,24 +24,24 @@ class ProtoSerializer {
     #
     # + ballerinaDataType - The data type of the value that needs to be serialized
     # + return - `serdes:SchemaGenerationError` if the data type is not supported else nil
-    public function init(typedesc<anydata> ballerinaDataType) returns SchemaGenerationError? {
-        SchemaGenerationError? err = generateSchema(self, ballerinaDataType);
+    public function init(typedesc<anydata> ballerinaDataType) returns Error? {
+        check generateSchema(self, ballerinaDataType);
     }
 
     # Serializes a given value.
     #
     # + data - The value that is being serialized
     # + return - A byte array corresponding to the encoded value
-    public function serialize(anydata data) returns byte[] {
+    public function serialize(anydata data) returns byte[]|Error {
         return serialize(self, data);
     }
 }
 
-public function generateSchema(Serializer | Deserializer serdes, typedesc<anydata> T) returns SchemaGenerationError? =
+public function generateSchema(Serializer | Deserializer serdes, typedesc<anydata> T) returns Error? =
 @java:Method {
 	'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
 }  external;
 
-public function serialize(Serializer ser, anydata data) returns byte[] = @java:Method {
+public function serialize(Serializer ser, anydata data) returns byte[]|Error = @java:Method {
 	'class: "io.ballerina.stdlib.serdes.Serializer"
 }  external;

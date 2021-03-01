@@ -30,7 +30,7 @@ import io.ballerina.runtime.api.values.BTypedesc;
 import java.util.Locale;
 import java.util.Map;
 
-import static io.ballerina.stdlib.serdes.Constants.SCHEMA_GENERATION_ERROR;
+import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
 import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
 
 /**
@@ -53,16 +53,17 @@ public class SchemaGenerator {
      * Creates a schema for a given data type and adds to native data.
      *
      * @param serdes  Serializer or Deserializer object.
-     * @param balType Data type that is being serialized.
+     * @param typedesc Data type that is being serialized.
      * @return {@code BError}, if there are schema generation errors, null otherwise.
      */
-    public static Object generateSchema(BObject serdes, BTypedesc balType) {
+    public static Object generateSchema(BObject serdes, BTypedesc typedesc) {
         ProtobufMessage protobufMessage;
 
         try {
-            protobufMessage = generateSchemaFromTypedesc(balType);
+            protobufMessage = generateSchemaFromTypedesc(typedesc);
+//            System.out.println(protobufMessage.getProtobufMessage());
         } catch (Exception e) {
-            return createSerdesError("Unsupported data type: " + e.getMessage(), SCHEMA_GENERATION_ERROR);
+            return createSerdesError("Unsupported data type: " + e.getMessage(), SERDES_ERROR);
         }
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder(SCHEMA_BUILDER_NAME);
@@ -71,7 +72,7 @@ public class SchemaGenerator {
         try {
             schema = schemaBuilder.build();
         } catch (Descriptors.DescriptorValidationException e) {
-            return createSerdesError("Failed to generate schema: " + e.getMessage(), SCHEMA_GENERATION_ERROR);
+            return createSerdesError("Failed to generate schema: " + e.getMessage(), SERDES_ERROR);
         }
         serdes.addNativeData(SCHEMA_NAME, schema);
 
@@ -109,7 +110,8 @@ public class SchemaGenerator {
 
     private static void generateSchemaForArray(ProtobufMessageBuilder messageBuilder, ArrayType arrayType,
                                                String name, int number) {
-        String elementType = DataTypeMapper.getProtoType(arrayType.getElementType().toString());
+        // use tag instead of to string
+        String elementType = DataTypeMapper.getProtoType(arrayType.getElementType().getName());
 
         if (elementType != null) {
             if (elementType.equals(BYTES)) {

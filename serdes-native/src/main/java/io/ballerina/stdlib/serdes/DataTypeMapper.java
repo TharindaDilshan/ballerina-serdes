@@ -37,10 +37,10 @@ public class DataTypeMapper {
         protoTypeMapper.put("Double", "float");
         protoTypeMapper.put("Float", "float");
         protoTypeMapper.put("float", "float");
-        protoTypeMapper.put("Integer", "int32");
-        protoTypeMapper.put("integer", "int32");
-        protoTypeMapper.put("Long", "int32");
-        protoTypeMapper.put("int", "int32");
+        protoTypeMapper.put("Integer", "sint64");
+        protoTypeMapper.put("integer", "sint64");
+        protoTypeMapper.put("Long", "sint64");
+        protoTypeMapper.put("int", "sint64");
         protoTypeMapper.put("Boolean", "bool");
         protoTypeMapper.put("boolean", "bool");
         protoTypeMapper.put("String", "string");

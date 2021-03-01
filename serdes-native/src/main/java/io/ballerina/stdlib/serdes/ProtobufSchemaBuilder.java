@@ -51,7 +51,7 @@ public class ProtobufSchemaBuilder {
         fileDescriptorProtoBuilder.addMessageType(protobufMessage);
     }
 
-    // Compiles the .proto file and builds FileDescriptors
+    // Parses the .proto file and builds FileDescriptors
     public Descriptors.Descriptor build() throws Descriptors.DescriptorValidationException {
         DescriptorProtos.FileDescriptorSet.Builder newFileDescriptorSetBuilder = DescriptorProtos.FileDescriptorSet
                                                                                                     .newBuilder();

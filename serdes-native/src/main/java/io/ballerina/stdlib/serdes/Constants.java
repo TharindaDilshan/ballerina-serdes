@@ -27,7 +27,5 @@ public class Constants {
     private Constants() {}
 
     // Error constants
-    public static final String SCHEMA_GENERATION_ERROR = "SchemaGenerationError";
-    public static final String SERIALIZATION_ERROR = "SerializationError";
-    public static final String DESERIALIZATION_ERROR = "DeserializationError";
+    public static final String SERDES_ERROR = "Error";
 }

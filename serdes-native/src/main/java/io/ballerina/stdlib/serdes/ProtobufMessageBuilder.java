@@ -74,7 +74,7 @@ public class ProtobufMessageBuilder {
             // Primitive types
          messageFieldBuilder.setType(fieldType);
        } else {
-            // TYPE_ENUM, TYPE_MESSAGE or TYPE_GROUP
+            // Non primitive
             messageFieldBuilder.setTypeName(type);
         }
 

@@ -15,10 +15,4 @@
 // under the License.
 
 # Returns for schema generation failures
-public type SchemaGenerationError distinct error;
-
-# Returns for serialization errors
-public type SerializationError distinct error;
-
-# Returns for deserialization errors
-public type DeserializationError distinct error;
+public type Error distinct error;

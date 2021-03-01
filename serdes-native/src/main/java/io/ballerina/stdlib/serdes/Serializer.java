@@ -31,6 +31,9 @@ import io.ballerina.runtime.api.values.BString;
 import java.util.Locale;
 import java.util.Map;
 
+import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
+import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
+
 /**
  * Serializer class to create a byte array for a value.
  *
@@ -59,10 +62,16 @@ public class Serializer {
      * @param message Data that is being serialized.
      * @return Byte array of the serialized value.
      */
-    public static BArray serialize(BObject serializer, Object message) {
+    public static Object serialize(BObject serializer, Object message) {
         Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
 
-        DynamicMessage dynamicMessage = generateDynamicMessage(message, schema);
+        DynamicMessage dynamicMessage;
+        try {
+            dynamicMessage = generateDynamicMessage(message, schema);
+        } catch (Exception e) {
+            return createSerdesError("Failed to Serialize data: " + e.getMessage(), SERDES_ERROR);
+        }
+
         BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
 
         return bArray;
@@ -97,11 +106,9 @@ public class Serializer {
     private static void generateDynamicMessageForPrimitive(DynamicMessage.Builder messageBuilder,
                                                            FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getProtoType(value.getClass().getSimpleName());
-
+        // casting to int*
         if (fieldType.equals(STRING)) {
             messageBuilder.setField(field, value.toString());
-        } else if (fieldType.equals(INTEGER)) {
-            messageBuilder.setField(field, Integer.valueOf(value.toString()));
         } else if (fieldType.equals(FLOAT)) {
             messageBuilder.setField(field, Float.valueOf(value.toString()));
         } else {
@@ -125,8 +132,6 @@ public class Serializer {
 
             if (fieldType.equals(STRING)) {
                 messageBuilder.addRepeatedField(field, element.toString());
-            } else if (fieldType.equals(INTEGER)) {
-                messageBuilder.addRepeatedField(field, Integer.valueOf(element.toString()));
             } else if (fieldType.equals(FLOAT)) {
                 messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
             } else if (fieldType.equals(MESSAGE)) {

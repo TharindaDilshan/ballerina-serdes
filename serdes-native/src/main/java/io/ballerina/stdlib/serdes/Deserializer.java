@@ -37,6 +37,9 @@ import io.ballerina.runtime.api.values.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
+import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
+
 /**
  * Deserializer class to generate an object from a byte array.
  *
@@ -72,8 +75,8 @@ public class Deserializer {
             dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
 
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
-        } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
         }
 
         return object;
