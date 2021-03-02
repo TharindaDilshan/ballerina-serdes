@@ -63,6 +63,8 @@ type Arrays record {
     byte[] byteArray;
 };
 
+type JSON json;
+
 type StringArray string[];
 type IntArray int[];
 type ByteArray byte[];
@@ -71,6 +73,8 @@ type BoolArray boolean[];
 
 type RecordArray Contact[];
 type CustomerTable table<map<any>>;
+
+type myanydata ()|boolean|int|float|decimal|string|map<myanydata>|myanydata[];
 
 @test:Config{}
 public function testPrimitiveFloat() returns error? {
@@ -118,7 +122,7 @@ public function testStringArray() returns error? {
     byte[] encoded = check ser.serialize(["Jane", "Doe"]);
 
     ProtoDeserializer des = check new(StringArray);
-    StringArray|error decoded = (check des.deserialize(encoded)).cloneWithType(StringArray);
+    StringArray decoded = <StringArray>check des.deserialize(encoded);
     test:assertEquals(decoded, ["Jane", "Doe"]);
 }
 
@@ -128,7 +132,7 @@ public function testIntArray() returns error? {
     byte[] encoded = check ser.serialize([1, 2, 3]);
 
     ProtoDeserializer des = check new(IntArray);
-    IntArray|error decoded = (check des.deserialize(encoded)).cloneWithType(IntArray);
+    IntArray decoded = <IntArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [1, 2, 3]);
 }
 
@@ -148,7 +152,7 @@ public function testFloatArray() returns error? {
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
     ProtoDeserializer des = check new(FloatArray);
-    FloatArray|error decoded = (check des.deserialize(encoded)).cloneWithType(FloatArray);
+    FloatArray decoded = <FloatArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [0.123, 4.968, 3.256]);
 }
 
@@ -158,7 +162,7 @@ public function testBooleanArray() returns error? {
     byte[] encoded = check ser.serialize([true, false, true, false]);
 
     ProtoDeserializer des = check new(BoolArray);
-    BoolArray|error decoded = (check des.deserialize(encoded)).cloneWithType(BoolArray);
+    BoolArray decoded = <BoolArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [true, false, true, false]);
 }
 

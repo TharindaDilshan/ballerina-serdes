@@ -19,11 +19,13 @@
 package io.ballerina.stdlib.serdes;
 
 import com.google.protobuf.Descriptors;
+import com.google.protobuf.util.JsonFormat;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.types.ArrayType;
 import io.ballerina.runtime.api.types.Field;
 import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BTypedesc;
 
@@ -61,9 +63,10 @@ public class SchemaGenerator {
 
         try {
             protobufMessage = generateSchemaFromTypedesc(typedesc);
-//            System.out.println(protobufMessage.getProtobufMessage());
+        } catch (BError e) {
+            return e;
         } catch (Exception e) {
-            return createSerdesError("Unsupported data type: " + e.getMessage(), SERDES_ERROR);
+            return createSerdesError("Failed to generate schema: " + e.getMessage(), SERDES_ERROR);
         }
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder(SCHEMA_BUILDER_NAME);
@@ -97,10 +100,13 @@ public class SchemaGenerator {
             generateSchemaForArray(messageBuilder, arrayType, ARRAY_FIELD_NAME, 1);
 
             return messageBuilder.build();
-        } else {
+        } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             RecordType recordType = (RecordType) type;
             return generateSchemaForRecord(recordType.getFields(), typedesc.getDescribingType().getName());
+        } else {
+            throw createSerdesError("Unsupported data type: " + type.getName(), SERDES_ERROR);
         }
+
     }
 
     private static void generateSchemaForPrimitive(ProtobufMessageBuilder messageBuilder, String type,

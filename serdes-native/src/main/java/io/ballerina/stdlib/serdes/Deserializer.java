@@ -125,17 +125,22 @@ public class Deserializer {
         } else {
             Collection collection = (Collection) value;
 
-            collection  = (Collection) collection.stream().map(s ->
-                                s.getClass().getSimpleName().equals(STRING) ? StringUtils.fromString(s.toString()) :
-                                s.getClass().getSimpleName().equals(FLOAT) ? Double.valueOf(s.toString()) :
-                                s.getClass().getSimpleName().equals(DYNAMIC_MESSAGE) ?
-                                                                            processRecordElement(s, type) : s)
-                                .collect(Collectors.toList());
+            BArray bArray = ValueCreator.createArrayValue(TypeCreator.createArrayType(type));
 
-            return ValueCreator.createArrayValue(
-                    collection.toArray(),
-                    TypeCreator.createArrayType(PredefinedTypes.TYPE_ANYDATA)
-            );
+            for (Iterator it = collection.iterator(); it.hasNext(); ) {
+                Object element = it.next();
+                if (element.getClass().getSimpleName().equals(STRING)) {
+                    bArray.append(StringUtils.fromString(element.toString()));
+                } else if (element.getClass().getSimpleName().equals(FLOAT)) {
+                    bArray.append(Double.valueOf(element.toString()));
+                } else if (element.getClass().getSimpleName().equals(DYNAMIC_MESSAGE)) {
+                    bArray.append(processRecordElement(element, type));
+                } else {
+                    bArray.append(element);
+                }
+            }
+
+            return bArray;
         }
     }
 
