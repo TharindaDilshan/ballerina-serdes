@@ -14,7 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-//import ballerina/io;
+import ballerina/io;
 import ballerina/test;
 
 type Contact record {
@@ -42,7 +42,7 @@ type Person record {
 
 type Student record {
    string name;
-   int age;
+   int? age;
    byte[] img;
    Contact[] contacts;
    Address address;
@@ -69,6 +69,7 @@ type StringArray string[];
 type IntArray int[];
 type ByteArray byte[];
 type FloatArray float[];
+type DecimalArray float[];
 type BoolArray boolean[];
 
 type RecordArray Contact[];
@@ -84,6 +85,16 @@ public function testPrimitiveFloat() returns error? {
     ProtoDeserializer des = check new(float);
     float decoded = <float>check des.deserialize(encoded);
     test:assertEquals(decoded, 6.666);
+}
+
+@test:Config{}
+public function testPrimitiveDecimal() returns error? {
+    ProtoSerializer ser = check new(decimal);
+    byte[] encoded = check ser.serialize(1.23);
+
+    ProtoDeserializer des = check new(decimal);
+    float decoded = <float>check des.deserialize(encoded);
+    test:assertEquals(decoded, 1.23);
 }
 
 @test:Config{}
@@ -152,6 +163,16 @@ public function testFloatArray() returns error? {
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
     ProtoDeserializer des = check new(FloatArray);
+    FloatArray decoded = <FloatArray>check des.deserialize(encoded);
+    test:assertEquals(decoded, [0.123, 4.968, 3.256]);
+}
+
+@test:Config{}
+public function testDecimalArray() returns error? {
+    ProtoSerializer ser = check new(DecimalArray);
+    byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
+
+    ProtoDeserializer des = check new(DecimalArray);
     FloatArray decoded = <FloatArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [0.123, 4.968, 3.256]);
 }
@@ -242,13 +263,37 @@ public function testComplexRecord() returns error? {
 
     Contact[] nums = [phone1, phone2];
 
-    Student john = { name: "John Doe", age: 21, img: byteArray, contacts: nums, address: address };
+    Student john = { name: "John Doe", age: (), img: byteArray, contacts: nums, address: address };
 
     ProtoSerializer ser = check new(Student);
     byte[] encoded = check ser.serialize(john);
 
     ProtoDeserializer des = check new(Student);
     Student decoded = <Student>check des.deserialize(encoded);
-    //io:println(des.deserialize(encoded));
+
     test:assertEquals(decoded, john);
+}
+
+type Member record {
+    string name;
+    decimal? salary;
+    Contact contact?;
+};
+
+@test:Config{}
+public function testNilableRecord() returns error? {
+
+    Contact phone1 = {mobile: "+123456", home: "789"};
+
+    Member member1 = {name: "foo", salary: 1.23, contact: phone1};
+    Member member2 = {name: "bar", salary:(), contact: phone1};
+
+    ProtoSerializer ser = check new(Member);
+    byte[] encoded = check ser.serialize(member2);
+
+    ProtoDeserializer des = check new(Member);
+    Member decoded = <Member>check des.deserialize(encoded);
+
+    io:println(decoded);
+    test:assertEquals(decoded, member2);
 }

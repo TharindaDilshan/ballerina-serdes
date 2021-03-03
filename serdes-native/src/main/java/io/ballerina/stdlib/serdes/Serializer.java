@@ -50,8 +50,8 @@ public class Serializer {
 
     static final String BYTE = "bytes";
     static final String STRING = "string";
-    static final String INTEGER = "int32";
     static final String FLOAT = "float";
+    static final String DOUBLE = "double";
     static final String ARRAY = "ArrayValueImpl";
     static final String MESSAGE = "message";
 
@@ -106,11 +106,13 @@ public class Serializer {
     private static void generateDynamicMessageForPrimitive(DynamicMessage.Builder messageBuilder,
                                                            FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getProtoType(value.getClass().getSimpleName());
-        // casting to int*
+
         if (fieldType.equals(STRING)) {
             messageBuilder.setField(field, value.toString());
         } else if (fieldType.equals(FLOAT)) {
             messageBuilder.setField(field, Float.valueOf(value.toString()));
+        } else if (fieldType.equals(DOUBLE)) {
+            messageBuilder.setField(field, Double.valueOf(value.toString()));
         } else {
             messageBuilder.setField(field, value);
         }
@@ -134,6 +136,8 @@ public class Serializer {
                 messageBuilder.addRepeatedField(field, element.toString());
             } else if (fieldType.equals(FLOAT)) {
                 messageBuilder.addRepeatedField(field, Float.valueOf(element.toString()));
+            } else if (fieldType.equals(DOUBLE)) {
+                messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
             } else if (fieldType.equals(MESSAGE)) {
                 String nestedTypeName = bArray.getElementType().getName().toUpperCase(Locale.ROOT);
                 Descriptor elementSchema = field.getContainingType().findNestedTypeByName(nestedTypeName);
@@ -152,6 +156,10 @@ public class Serializer {
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
+            if (entry.getValue() == null) {
+                continue;
+            }
+
             if (entry.getValue() instanceof BMap) {
                 String nestedTypeName = entry.getKey().toString().toUpperCase(Locale.getDefault());
                 Descriptor subMessageDescriptor = schema.findNestedTypeByName(nestedTypeName);

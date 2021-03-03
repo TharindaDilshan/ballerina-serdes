@@ -34,9 +34,11 @@ public class DataTypeMapper {
 
     static {
         protoTypeMapper = new HashMap<>();
-        protoTypeMapper.put("Double", "float");
-        protoTypeMapper.put("Float", "float");
-        protoTypeMapper.put("float", "float");
+        protoTypeMapper.put("Double", "double");
+        protoTypeMapper.put("Float", "double");
+        protoTypeMapper.put("float", "double");
+        protoTypeMapper.put("decimal", "double");
+        protoTypeMapper.put("DecimalValue", "double");
         protoTypeMapper.put("Integer", "sint64");
         protoTypeMapper.put("integer", "sint64");
         protoTypeMapper.put("Long", "sint64");

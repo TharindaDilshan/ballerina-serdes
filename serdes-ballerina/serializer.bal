@@ -16,5 +16,5 @@
 
 # Serializer object that can be used to create custom serializers.
 public type Serializer object {
-    public function serialize(anydata data) returns byte[]|Error;
+    public isolated function serialize(anydata data) returns byte[]|Error;
 };

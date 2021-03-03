@@ -16,5 +16,5 @@
 
 # Deserializer object that can be used to create custom deserializers.
 public type Deserializer object {
-    public function deserialize(byte[] encodedMessage) returns anydata|Error;
+    public isolated function deserialize(byte[] encodedMessage) returns anydata|Error;
 };

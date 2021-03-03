@@ -37,12 +37,12 @@ class ProtoDeserializer {
     #
     # + encodedMessage - The encoded byte array of the value that is serialized
     # + return - The value represented by the encoded byte array
-    public function deserialize(byte[] encodedMessage) returns anydata|Error {
+    public isolated function deserialize(byte[] encodedMessage) returns anydata|Error {
         return deserialize(self, encodedMessage, self.dataType);
     }
 }
 
-public function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns anydata|Error =
+public isolated function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns anydata|Error =
 @java:Method {
     'class: "io.ballerina.stdlib.serdes.Deserializer"
 }  external;

@@ -27,10 +27,7 @@ import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.ArrayType;
-import io.ballerina.runtime.api.types.Field;
-import io.ballerina.runtime.api.types.RecordType;
-import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.*;
 import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.*;
 
@@ -50,6 +47,7 @@ public class Deserializer {
     static final String BYTE = "LiteralByteString";
     static final String STRING = "String";
     static final String FLOAT = "Float";
+    static final String DOUBLE = "Double";
     static final String DYNAMIC_MESSAGE = "DynamicMessage";
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
@@ -75,6 +73,8 @@ public class Deserializer {
             dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
 
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
+        } catch (BError e) {
+            return e;
         } catch (Exception e) {
             return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
         }
@@ -88,7 +88,24 @@ public class Deserializer {
 
     private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc,
                                                         Descriptor schema) {
-        Type type = typedesc.getDescribingType();
+        Type type = null;
+
+        if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
+            UnionType unionType = (UnionType) typedesc.getDescribingType();
+
+            if (unionType.getMemberTypes().size() == 2) {
+                for (Type elementType : unionType.getMemberTypes()) {
+                    if (elementType.getTag() != TypeTags.NULL_TAG) {
+                        type = elementType;
+                        continue;
+                    }
+                }
+            } else {
+                throw createSerdesError("Unsupported data type: " + typedesc.getDescribingType().getName(), SERDES_ERROR);
+            }
+        } else {
+            type = typedesc.getDescribingType();
+        }
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
@@ -112,6 +129,8 @@ public class Deserializer {
             return StringUtils.fromString(value.toString());
         } else if(value.getClass().getSimpleName().equals(FLOAT)) {
             return Double.valueOf(value.toString());
+        } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
+            return ValueCreator.createDecimalValue(value.toString());
         } else {
             return value;
         }
@@ -149,6 +168,7 @@ public class Deserializer {
 
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
             Object value = entry.getValue();
+
             if (value instanceof DynamicMessage) {
                 DynamicMessage msg = (DynamicMessage) entry.getValue();
 
@@ -187,11 +207,29 @@ public class Deserializer {
 
     private static String getRecordTypeName(Type type, String fieldName) {
         RecordType recordType = (RecordType) type;
+
         for (Map.Entry<String, Field> entry: recordType.getFields().entrySet()) {
-            if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG && entry.getKey().equals(fieldName)) {
-                return entry.getValue().getFieldType().getName();
-            } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
-                return getRecordTypeName(entry.getValue().getFieldType(), fieldName);
+            Type fieldType = entry.getValue().getFieldType();
+
+            if (fieldType.getTag() == TypeTags.UNION_TAG) {
+                UnionType unionType = (UnionType) fieldType;
+
+                if (unionType.getMemberTypes().size() == 2) {
+                    for (Type elementType : unionType.getMemberTypes()) {
+                        if (elementType.getTag() != TypeTags.NULL_TAG) {
+                            fieldType = elementType;
+                            continue;
+                        }
+                    }
+                } else {
+                    throw createSerdesError("Unsupported data type: " + fieldType.getName(), SERDES_ERROR);
+                }
+            }
+
+            if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG && entry.getKey().equals(fieldName)) {
+                return fieldType.getName();
+            } else if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                return getRecordTypeName(fieldType, fieldName);
             } else {
                 continue;
             }

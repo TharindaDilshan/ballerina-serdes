@@ -32,7 +32,7 @@ class ProtoSerializer {
     #
     # + data - The value that is being serialized
     # + return - A byte array corresponding to the encoded value
-    public function serialize(anydata data) returns byte[]|Error {
+    public isolated function serialize(anydata data) returns byte[]|Error {
         return serialize(self, data);
     }
 }
@@ -42,6 +42,6 @@ public function generateSchema(Serializer | Deserializer serdes, typedesc<anydat
 	'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
 }  external;
 
-public function serialize(Serializer ser, anydata data) returns byte[]|Error = @java:Method {
+public isolated function serialize(Serializer ser, anydata data) returns byte[]|Error = @java:Method {
 	'class: "io.ballerina.stdlib.serdes.Serializer"
 }  external;
