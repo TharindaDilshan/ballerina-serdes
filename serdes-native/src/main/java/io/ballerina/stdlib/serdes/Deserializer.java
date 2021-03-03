@@ -115,10 +115,11 @@ public class Deserializer {
             ArrayType arrayType = (ArrayType) type;
             Type elementType = arrayType.getElementType();
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ARRAY_FIELD_NAME);
+            schema = fieldDescriptor.getContainingType();
 
-            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType);
+            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema);
         } else {
-            Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type);
+            Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
         }
@@ -136,7 +137,7 @@ public class Deserializer {
         }
     }
 
-    private static Object arrayToBallerina(Object value, Type type) {
+    private static Object arrayToBallerina(Object value, Type type, Descriptor schema) {
         if (value.getClass().getSimpleName().equals(BYTE)) {
             ByteString byteString = (ByteString) value;
 
@@ -148,12 +149,26 @@ public class Deserializer {
 
             for (Iterator it = collection.iterator(); it.hasNext(); ) {
                 Object element = it.next();
-                if (element.getClass().getSimpleName().equals(STRING)) {
+
+                if (type.getTag() == TypeTags.STRING_TAG) {
                     bArray.append(StringUtils.fromString(element.toString()));
-                } else if (element.getClass().getSimpleName().equals(FLOAT)) {
+                } else if (type.getTag() == TypeTags.FLOAT_TAG) {
                     bArray.append(Double.valueOf(element.toString()));
-                } else if (element.getClass().getSimpleName().equals(DYNAMIC_MESSAGE)) {
-                    bArray.append(processRecordElement(element, type));
+                } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+                    ArrayType arrayType = (ArrayType) type;
+                    Type elementType = arrayType.getElementType();
+
+                    Descriptor nestedSchema = schema.findNestedTypeByName(elementType.getName().toUpperCase(Locale.ROOT));
+                    DynamicMessage nestedDynamicMessage = (DynamicMessage) element;
+                    FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(elementType.getName());
+
+                    BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
+                                                                   elementType, schema);
+                    bArray.append(nestedArray);
+                } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                    Map<String, Object> mapObject = recordToBallerina((DynamicMessage) element, type, schema);
+
+                    bArray.append(ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject));
                 } else {
                     bArray.append(element);
                 }
@@ -163,7 +178,7 @@ public class Deserializer {
         }
     }
 
-    private static Map<String, Object> recordToBallerina(DynamicMessage dynamicMessage, Type type) {
+    private static Map<String, Object> recordToBallerina(DynamicMessage dynamicMessage, Type type, Descriptor schema) {
         Map<String, Object> map = new HashMap();
 
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
@@ -172,7 +187,7 @@ public class Deserializer {
             if (value instanceof DynamicMessage) {
                 DynamicMessage msg = (DynamicMessage) entry.getValue();
 
-                Map<String, Object> nestedMap = recordToBallerina(msg, type);
+                Map<String, Object> nestedMap = recordToBallerina(msg, type, schema);
                 String recordTypeName = getRecordTypeName(type, entry.getKey().getName());
 
                 BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
@@ -186,11 +201,11 @@ public class Deserializer {
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
                 if (!value.getClass().getSimpleName().equals(BYTE)) {
                     Type elementType = getArrayElementType(type, entry.getKey().getName());
-                    Object handleArray = arrayToBallerina(entry.getValue(), elementType);
+                    Object handleArray = arrayToBallerina(entry.getValue(), elementType, schema);
 
                     map.put(entry.getKey().getName(), handleArray);
                 } else {
-                    Object handleArray = arrayToBallerina(entry.getValue(), type);
+                    Object handleArray = arrayToBallerina(entry.getValue(), type, schema);
 
                     map.put(entry.getKey().getName(), handleArray);
                 }
@@ -256,9 +271,4 @@ public class Deserializer {
         return null;
     }
 
-    private static Object processRecordElement(Object s, Type type) {
-        Map<String, Object> mapObject = recordToBallerina((DynamicMessage) s, type);
-
-        return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
-    }
 }

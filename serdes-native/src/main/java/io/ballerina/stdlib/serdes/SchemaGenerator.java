@@ -150,21 +150,32 @@ public class SchemaGenerator {
         }
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
-            String protoElementType = DataTypeMapper.getProtoType(arrayType.getElementType().getName());
+            String protoElementType = DataTypeMapper.getProtoType(type.getName());
 
             if (protoElementType.equals(BYTES)) {
-                messageBuilder.addField("required", protoElementType, name, number);
+                messageBuilder.addField("optional", protoElementType, name, number);
             } else {
                 messageBuilder.addField("repeated", protoElementType, name, number);
             }
+        } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+            ArrayType nestedArrayType = (ArrayType) type;
+            String nestedMessageName = nestedArrayType.getElementType().getName();
+            ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName.toUpperCase(Locale.ROOT));
+            generateSchemaForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1);
+
+            messageBuilder.addNestedMessage(nestedMessageBuilder.build());
+            messageBuilder.addField("repeated", nestedMessageName.toUpperCase(Locale.ROOT), name, number);
+
         } else {
-            RecordType recordType = (RecordType) arrayType.getElementType();
-            String[] elementNameHolder = arrayType.getElementType().getName().split(":");
+            RecordType recordType = (RecordType) type;
+            String[] elementNameHolder = type.getName().split(":");
             String elementType = elementNameHolder[elementNameHolder.length - 1];
 
             messageBuilder.addNestedMessage(generateSchemaForRecord(recordType.getFields(), recordType.getName()));
             messageBuilder.addField("repeated", elementType.toUpperCase(Locale.getDefault()), name, number);
         }
+
+        return;
     }
 
     private static ProtobufMessage generateSchemaForRecord(Map<String, Field> dataTypeMap, String name) {

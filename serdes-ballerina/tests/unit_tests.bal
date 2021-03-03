@@ -297,3 +297,23 @@ public function testNilableRecord() returns error? {
     io:println(decoded);
     test:assertEquals(decoded, member2);
 }
+
+type InnerArray int[];
+type OuterArray InnerArray[];
+
+@test:Config{}
+public function testNestedArray() returns error? {
+
+    InnerArray i1 = [1, 2, 3];
+    InnerArray i2 = [4, 5, 6];
+    OuterArray I = [i1, i2];
+
+    ProtoSerializer ser = check new(OuterArray);
+    byte[] encoded = check ser.serialize(I);
+    //io:println(encoded);
+    ProtoDeserializer des = check new(OuterArray);
+    OuterArray decoded = <OuterArray>check des.deserialize(encoded);
+
+    io:println(decoded);
+    //test:assertEquals(decoded, member2);
+}
