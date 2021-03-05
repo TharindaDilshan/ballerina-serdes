@@ -16,21 +16,26 @@
 
 import ballerina/jballerina.java;
 
-# Represents ProtoDeserializer object.
-#
-# + dataType - The data type of the value that needs to be serialized
-class ProtoDeserializer {
-    *Deserializer;
+class Proto3SerDes {
+    *SerDes;
 
     private typedesc<anydata> dataType;
 
     # Generates a schema for a given data type.
     #
     # + ballerinaDataType - The data type of the value that needs to be serialized
-    # + return - `serdes:SchemaGenerationError` if the data type is not supported else nil
+    # + return - `serdes:Error` if the data type is not supported else nil
     public function init(typedesc<anydata> ballerinaDataType) returns Error? {
         self.dataType = ballerinaDataType;
         check generateSchema(self, ballerinaDataType);
+    }
+
+    # Serializes a given value.
+    #
+    # + data - The value that is being serialized
+    # + return - A byte array corresponding to the encoded value
+    public isolated function serialize(anydata data) returns byte[]|Error {
+        return serialize(self, data);
     }
 
     # Deserializes a given array of bytes.
@@ -42,7 +47,16 @@ class ProtoDeserializer {
     }
 }
 
-public isolated function deserialize(Deserializer des, byte[] encodedMessage, typedesc<anydata> T) returns anydata|Error =
+public function generateSchema(SerDes serdes, typedesc<anydata> T) returns Error? =
+@java:Method {
+    'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
+}  external;
+
+public isolated function serialize(SerDes ser, anydata data) returns byte[]|Error = @java:Method {
+    'class: "io.ballerina.stdlib.serdes.Serializer"
+}  external;
+
+public isolated function deserialize(SerDes des, byte[] encodedMessage, typedesc<anydata> T) returns anydata|Error =
 @java:Method {
     'class: "io.ballerina.stdlib.serdes.Deserializer"
 }  external;

@@ -79,112 +79,131 @@ type myanydata ()|boolean|int|float|decimal|string|map<myanydata>|myanydata[];
 
 @test:Config{}
 public function testPrimitiveFloat() returns error? {
-    ProtoSerializer ser = check new(float);
+    Proto3SerDes ser = check new(float);
     byte[] encoded = check ser.serialize(6.666);
 
-    ProtoDeserializer des = check new(float);
+    Proto3SerDes des = check new(float);
     float decoded = <float>check des.deserialize(encoded);
     test:assertEquals(decoded, 6.666);
 }
 
 @test:Config{}
 public function testPrimitiveDecimal() returns error? {
-    ProtoSerializer ser = check new(decimal);
+    Proto3SerDes ser = check new(decimal);
     byte[] encoded = check ser.serialize(1.23);
 
-    ProtoDeserializer des = check new(decimal);
+    Proto3SerDes des = check new(decimal);
     float decoded = <float>check des.deserialize(encoded);
     test:assertEquals(decoded, 1.23);
 }
 
 @test:Config{}
 public function testPrimitiveBoolean() returns error? {
-    ProtoSerializer ser = check new(boolean);
+    Proto3SerDes ser = check new(boolean);
     byte[] encoded = check ser.serialize(true);
 
-    ProtoDeserializer des = check new(boolean);
+    Proto3SerDes des = check new(boolean);
     boolean decoded = <boolean>check des.deserialize(encoded);
     test:assertEquals(decoded, true);
 }
 
 @test:Config{}
 public function testPrimitiveString() returns error? {
-    ProtoSerializer ser = check new(string);
+    Proto3SerDes ser = check new(string);
     byte[] encoded = check ser.serialize("module-ballerina-serdes");
 
-    ProtoDeserializer des = check new(string);
+    Proto3SerDes des = check new(string);
     string decoded = <string>check des.deserialize(encoded);
     test:assertEquals(decoded, "module-ballerina-serdes");
 }
 
 @test:Config{}
 public function testPrimitiveInt() returns error? {
-    ProtoSerializer ser = check new(int);
+    Proto3SerDes ser = check new(int);
     byte[] encoded = check ser.serialize(666);
 
-    ProtoDeserializer des = check new(int);
+    Proto3SerDes des = check new(int);
     int decoded = <int>check des.deserialize(encoded);
     test:assertEquals(decoded, 666);
 }
 
 @test:Config{}
 public function testStringArray() returns error? {
-    ProtoSerializer ser = check new(StringArray);
+    Proto3SerDes ser = check new(StringArray);
     byte[] encoded = check ser.serialize(["Jane", "Doe"]);
 
-    ProtoDeserializer des = check new(StringArray);
+    Proto3SerDes des = check new(StringArray);
     StringArray decoded = <StringArray>check des.deserialize(encoded);
     test:assertEquals(decoded, ["Jane", "Doe"]);
 }
 
 @test:Config{}
 public function testIntArray() returns error? {
-    ProtoSerializer ser = check new(IntArray);
+    Proto3SerDes ser = check new(IntArray);
     byte[] encoded = check ser.serialize([1, 2, 3]);
 
-    ProtoDeserializer des = check new(IntArray);
+    Proto3SerDes des = check new(IntArray);
     IntArray decoded = <IntArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [1, 2, 3]);
 }
 
 @test:Config{}
 public function testByteArray() returns error? {
-    ProtoSerializer ser = check new(ByteArray);
+    Proto3SerDes ser = check new(ByteArray);
     byte[] encoded = check ser.serialize(base16 `aeeecdefabcd12345567888822`);
 
-    ProtoDeserializer des = check new(ByteArray);
+    Proto3SerDes des = check new(ByteArray);
     ByteArray decoded = <ByteArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [174,238,205,239,171,205,18,52,85,103,136,136,34]);
 }
 
 @test:Config{}
 public function testFloatArray() returns error? {
-    ProtoSerializer ser = check new(FloatArray);
+    Proto3SerDes ser = check new(FloatArray);
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
-    ProtoDeserializer des = check new(FloatArray);
+    Proto3SerDes des = check new(FloatArray);
     FloatArray decoded = <FloatArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [0.123, 4.968, 3.256]);
 }
 
 @test:Config{}
 public function testDecimalArray() returns error? {
-    ProtoSerializer ser = check new(DecimalArray);
+    Proto3SerDes ser = check new(DecimalArray);
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
-    ProtoDeserializer des = check new(DecimalArray);
+    Proto3SerDes des = check new(DecimalArray);
     FloatArray decoded = <FloatArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [0.123, 4.968, 3.256]);
 }
 
 @test:Config{}
 public function testBooleanArray() returns error? {
-    ProtoSerializer ser = check new(BoolArray);
+    Proto3SerDes ser = check new(BoolArray);
     byte[] encoded = check ser.serialize([true, false, true, false]);
 
-    ProtoDeserializer des = check new(BoolArray);
+    Proto3SerDes des = check new(BoolArray);
     BoolArray decoded = <BoolArray>check des.deserialize(encoded);
     test:assertEquals(decoded, [true, false, true, false]);
+}
+
+type InnerArray int[];
+type OuterArray InnerArray[];
+
+@test:Config{}
+public function testNestedArray() returns error? {
+
+    InnerArray i1 = [1, 2, 3];
+    InnerArray i2 = [4, 5, 6];
+    OuterArray I = [i1, i2];
+
+    Proto3SerDes ser = check new(OuterArray);
+    byte[] encoded = check ser.serialize(I);
+
+    Proto3SerDes des = check new(OuterArray);
+    OuterArray decoded = <OuterArray>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, I);
 }
 
 @test:Config{}
@@ -192,10 +211,10 @@ public function testRecordWithPrimitives() returns error? {
 
     Primitive primitiveRecord = { stringValue: "serdes", intValue: 192, floatValue: 192.168, boolValue: false };
 
-    ProtoSerializer ser = check new(Primitive);
+    Proto3SerDes ser = check new(Primitive);
     byte[] encoded = check ser.serialize(primitiveRecord);
 
-    ProtoDeserializer des = check new(Primitive);
+    Proto3SerDes des = check new(Primitive);
     Primitive decoded = <Primitive>check des.deserialize(encoded);
     test:assertEquals(decoded, primitiveRecord);
 }
@@ -211,10 +230,10 @@ public function testRecordWithArrays() returns error? {
         byteArray: base16 `aeeecdefabcd12345567888822`
     };
 
-    ProtoSerializer ser = check new(Arrays);
+    Proto3SerDes ser = check new(Arrays);
     byte[] encoded = check ser.serialize(arrayRecord);
 
-    ProtoDeserializer des = check new(Arrays);
+    Proto3SerDes des = check new(Arrays);
     Arrays decoded = <Arrays>check des.deserialize(encoded);
     test:assertEquals(decoded, arrayRecord);
 }
@@ -226,10 +245,10 @@ public function testNestedRecord() returns error? {
 
     Person president = { name: "Joe",  age:70, img:byteArray, random:1.666, contact:phone };
 
-    ProtoSerializer ser = check new(Person);
+    Proto3SerDes ser = check new(Person);
     byte[] encoded = check ser.serialize(president);
 
-    ProtoDeserializer des = check new(Person);
+    Proto3SerDes des = check new(Person);
     Person decoded = <Person>check des.deserialize(encoded);
 
     test:assertEquals(decoded, president);
@@ -242,10 +261,10 @@ public function testArrayOfRecords() returns error? {
 
     Contact[] contacts = [phone1, phone2];
 
-    ProtoSerializer ser = check new(RecordArray);
+    Proto3SerDes ser = check new(RecordArray);
     byte[] encoded = check ser.serialize(contacts);
 
-    ProtoDeserializer des = check new(RecordArray);
+    Proto3SerDes des = check new(RecordArray);
     RecordArray|error decoded = (check des.deserialize(encoded)).cloneWithType(RecordArray);
     test:assertEquals(decoded, contacts);
 }
@@ -265,10 +284,10 @@ public function testComplexRecord() returns error? {
 
     Student john = { name: "John Doe", age: (), img: byteArray, contacts: nums, address: address };
 
-    ProtoSerializer ser = check new(Student);
+    Proto3SerDes ser = check new(Student);
     byte[] encoded = check ser.serialize(john);
 
-    ProtoDeserializer des = check new(Student);
+    Proto3SerDes des = check new(Student);
     Student decoded = <Student>check des.deserialize(encoded);
 
     test:assertEquals(decoded, john);
@@ -288,32 +307,33 @@ public function testNilableRecord() returns error? {
     Member member1 = {name: "foo", salary: 1.23, contact: phone1};
     Member member2 = {name: "bar", salary:(), contact: phone1};
 
-    ProtoSerializer ser = check new(Member);
+    Proto3SerDes ser = check new(Member);
     byte[] encoded = check ser.serialize(member2);
 
-    ProtoDeserializer des = check new(Member);
+    Proto3SerDes des = check new(Member);
     Member decoded = <Member>check des.deserialize(encoded);
 
-    io:println(decoded);
     test:assertEquals(decoded, member2);
 }
 
-type InnerArray int[];
-type OuterArray InnerArray[];
+type NilMember record {
+    decimal? salary;
+};
+
+type DorN decimal?;
 
 @test:Config{}
-public function testNestedArray() returns error? {
+public function testNil() returns error? {
 
-    InnerArray i1 = [1, 2, 3];
-    InnerArray i2 = [4, 5, 6];
-    OuterArray I = [i1, i2];
+    //Member member1 = {name: "foo", salary: 1.23, contact: phone1};
+    NilMember member2 = {salary:()};
 
-    ProtoSerializer ser = check new(OuterArray);
-    byte[] encoded = check ser.serialize(I);
-    //io:println(encoded);
-    ProtoDeserializer des = check new(OuterArray);
-    OuterArray decoded = <OuterArray>check des.deserialize(encoded);
+    Proto3SerDes ser = check new(DorN);
+    byte[] encoded = check ser.serialize(());
 
-    io:println(decoded);
-    //test:assertEquals(decoded, member2);
+    Proto3SerDes des = check new(DorN);
+    DorN decoded = <DorN>check des.deserialize(encoded);
+
+    io:println(encoded);
+    test:assertEquals(decoded, ());
 }

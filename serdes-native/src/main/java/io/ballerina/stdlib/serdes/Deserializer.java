@@ -126,11 +126,24 @@ public class Deserializer {
     }
 
     private static Object primitiveToBallerina(Object value) {
+
         if (value.getClass().getSimpleName().equals(STRING)) {
+            if (value.toString().equals("")) {
+                return null;
+            }
+
             return StringUtils.fromString(value.toString());
         } else if(value.getClass().getSimpleName().equals(FLOAT)) {
+            if (Double.valueOf(value.toString()) == 0.0) {
+                return null;
+            }
+
             return Double.valueOf(value.toString());
         } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
+            if (Double.valueOf(value.toString()) == 0.0) {
+                return null;
+            }
+
             return ValueCreator.createDecimalValue(value.toString());
         } else {
             return value;

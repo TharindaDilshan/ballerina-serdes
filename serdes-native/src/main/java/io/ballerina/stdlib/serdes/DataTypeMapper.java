@@ -18,6 +18,8 @@
 
 package io.ballerina.stdlib.serdes;
 
+import io.ballerina.runtime.api.TypeTags;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,30 +28,36 @@ import java.util.Map;
 *
 */
 public class DataTypeMapper {
-    private static Map<String, String> protoTypeMapper;
+    private static Map<String, String> javaTypeToProto;
+    private static Map<Integer, String> ballerinaTypeTagToProto;
 
-    public static String getProtoType(String type) {
-        return protoTypeMapper.get(type);
+    public static String getProtoTypeFromJavaType(String type) {
+        return javaTypeToProto.get(type);
+    }
+    public static String getProtoTypeFromTag(int tag) {
+        return ballerinaTypeTagToProto.get(tag);
     }
 
     static {
-        protoTypeMapper = new HashMap<>();
-        protoTypeMapper.put("Double", "double");
-        protoTypeMapper.put("Float", "double");
-        protoTypeMapper.put("float", "double");
-        protoTypeMapper.put("decimal", "double");
-        protoTypeMapper.put("DecimalValue", "double");
-        protoTypeMapper.put("Integer", "sint64");
-        protoTypeMapper.put("integer", "sint64");
-        protoTypeMapper.put("Long", "sint64");
-        protoTypeMapper.put("int", "sint64");
-        protoTypeMapper.put("Boolean", "bool");
-        protoTypeMapper.put("boolean", "bool");
-        protoTypeMapper.put("String", "string");
-        protoTypeMapper.put("string", "string");
-        protoTypeMapper.put("BmpStringValue", "string");
-        protoTypeMapper.put("Byte", "bytes");
-        protoTypeMapper.put("byte", "bytes");
+        javaTypeToProto = new HashMap<>();
+        javaTypeToProto.put("Double", "double");
+        javaTypeToProto.put("Float", "double");
+        javaTypeToProto.put("Integer", "sint64");
+        javaTypeToProto.put("Long", "sint64");
+        javaTypeToProto.put("Boolean", "bool");
+        javaTypeToProto.put("String", "string");
+        javaTypeToProto.put("BmpStringValue", "string");
+        javaTypeToProto.put("Byte", "bytes");
+    }
+
+    static {
+        ballerinaTypeTagToProto = new HashMap<>();
+        ballerinaTypeTagToProto.put(TypeTags.INT_TAG, "sint64");
+        ballerinaTypeTagToProto.put(TypeTags.BYTE_TAG, "bytes");
+        ballerinaTypeTagToProto.put(TypeTags.FLOAT_TAG, "double");
+        ballerinaTypeTagToProto.put(TypeTags.DECIMAL_TAG, "double");
+        ballerinaTypeTagToProto.put(TypeTags.STRING_TAG, "string");
+        ballerinaTypeTagToProto.put(TypeTags.BOOLEAN_TAG, "bool");
     }
     
 }
