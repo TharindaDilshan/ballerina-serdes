@@ -27,6 +27,7 @@ import com.google.protobuf.DescriptorProtos;
 public class ProtobufMessageBuilder {
     // Describes a message type
     private DescriptorProtos.DescriptorProto.Builder messageBuilder;
+    private int oneofFieldIndex = 0;
 
     // Constructor with message name as parameter
     ProtobufMessageBuilder(String messageName) {
@@ -37,14 +38,14 @@ public class ProtobufMessageBuilder {
     // Add message field without default value
     public ProtobufMessageBuilder addField(String label, String type, String name, int number) {
         DescriptorProtos.FieldDescriptorProto.Label fieldLabel = ProtobufMessageField.getFieldLabel(label);
-        addField(fieldLabel, type, name, number, null);
+        addField(fieldLabel, type, name, number, null, null);
         return this;
     }
 
     // Add message field with default value
     public ProtobufMessageBuilder addField(String label, String type, String name, int number, String defaultValue) {
         DescriptorProtos.FieldDescriptorProto.Label fieldLabel = ProtobufMessageField.getFieldLabel(label);
-        addField(fieldLabel, type, name, number, defaultValue);
+        addField(fieldLabel, type, name, number, defaultValue, null);
         return this;
     }
 
@@ -53,14 +54,19 @@ public class ProtobufMessageBuilder {
         return this;
     }
 
+    public OneofFieldBuilder addOneofField(String oneofFieldName) {
+        messageBuilder.addOneofDecl(DescriptorProtos.OneofDescriptorProto.newBuilder().setName(oneofFieldName).build());
+        return new OneofFieldBuilder(this, oneofFieldIndex++);
+    }
+
     public ProtobufMessage build() {
 
         return new ProtobufMessage(messageBuilder.build());
     }
 
     // Add a single field to a message
-    private void addField(DescriptorProtos.FieldDescriptorProto.Label label, String type, String name, int number, 
-                            String defaultValue) {
+    public void addField(DescriptorProtos.FieldDescriptorProto.Label label, String type, String name, int number,
+                            String defaultValue, OneofFieldBuilder oneofFieldBuilder) {
         // Describes a field within a message.
         DescriptorProtos.FieldDescriptorProto.Builder messageFieldBuilder = DescriptorProtos.FieldDescriptorProto
                                                                                             .newBuilder();
@@ -80,6 +86,10 @@ public class ProtobufMessageBuilder {
 
         if (defaultValue != null) {
             messageFieldBuilder.setDefaultValue(defaultValue);
+        }
+
+        if (oneofFieldBuilder != null) {
+            messageFieldBuilder.setOneofIndex(oneofFieldBuilder.getMessageIndex());
         }
 
         messageBuilder.addField(messageFieldBuilder.build());

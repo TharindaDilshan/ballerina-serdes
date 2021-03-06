@@ -14,7 +14,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/io;
+//import ballerina/io;
 import ballerina/test;
 
 type Contact record {
@@ -334,6 +334,6 @@ public function testNil() returns error? {
     Proto3SerDes des = check new(DorN);
     DorN decoded = <DorN>check des.deserialize(encoded);
 
-    io:println(decoded);
+    //io:println(decoded);
     test:assertEquals(decoded, ());
 }
