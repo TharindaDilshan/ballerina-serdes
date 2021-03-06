@@ -23,7 +23,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
-import io.ballerina.runtime.api.PredefinedTypes;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
@@ -32,7 +31,6 @@ import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
 import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
@@ -55,6 +53,8 @@ public class Deserializer {
 
     static final String SCHEMA_NAME = "schema";
 
+    static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
+
     /**
      * Creates an anydata object from a byte array after deserializing.
      *
@@ -66,11 +66,10 @@ public class Deserializer {
     public static Object deserialize(BObject des, BArray encodedMessage, BTypedesc dataType) {
         Descriptor schema = (Descriptor) des.getNativeData(SCHEMA_NAME);
 
-        DynamicMessage dynamicMessage = null;
         Object object = null;
         
         try {
-            dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
+            DynamicMessage dynamicMessage = generateDynamicMessageFromBytes(schema, encodedMessage);
 
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
         } catch (BError e) {
@@ -91,18 +90,7 @@ public class Deserializer {
         Type type = null;
 
         if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            UnionType unionType = (UnionType) typedesc.getDescribingType();
-
-            if (unionType.getMemberTypes().size() == 2) {
-                for (Type elementType : unionType.getMemberTypes()) {
-                    if (elementType.getTag() != TypeTags.NULL_TAG) {
-                        type = elementType;
-                        continue;
-                    }
-                }
-            } else {
-                throw createSerdesError("Unsupported data type: " + typedesc.getDescribingType().getName(), SERDES_ERROR);
-            }
+            type = getTypeFromUnion(typedesc.getDescribingType());
         } else {
             type = typedesc.getDescribingType();
         }
@@ -126,25 +114,26 @@ public class Deserializer {
     }
 
     private static Object primitiveToBallerina(Object value) {
+        String valueInString = value.toString();
 
         if (value.getClass().getSimpleName().equals(STRING)) {
-            if (value.toString().equals("")) {
+            if (valueInString.equals("")) {
                 return null;
             }
 
-            return StringUtils.fromString(value.toString());
+            return StringUtils.fromString(valueInString);
         } else if(value.getClass().getSimpleName().equals(FLOAT)) {
-            if (Double.valueOf(value.toString()) == 0.0) {
+            if (Double.valueOf(valueInString) == 0.0) {
                 return null;
             }
 
-            return Double.valueOf(value.toString());
+            return Double.valueOf(valueInString);
         } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
-            if (Double.valueOf(value.toString()) == 0.0) {
+            if (Double.valueOf(valueInString) == 0.0) {
                 return null;
             }
 
-            return ValueCreator.createDecimalValue(value.toString());
+            return ValueCreator.createDecimalValue(valueInString);
         } else {
             return value;
         }
@@ -284,4 +273,19 @@ public class Deserializer {
         return null;
     }
 
+    private static Type getTypeFromUnion(Type type) {
+        UnionType unionType = (UnionType) type;
+
+        if (unionType.getMemberTypes().size() == 2) {
+            for (Type member : unionType.getMemberTypes()) {
+                if (member.getTag() != TypeTags.NULL_TAG) {
+                    return member;
+                }
+            }
+        } else {
+            throw createSerdesError(UNSUPPORTED_DATA_TYPE + unionType.getMemberTypes(), SERDES_ERROR);
+        }
+
+        return type;
+    }
 }

@@ -308,12 +308,12 @@ public function testNilableRecord() returns error? {
     Member member2 = {name: "bar", salary:(), contact: phone1};
 
     Proto3SerDes ser = check new(Member);
-    byte[] encoded = check ser.serialize(member2);
+    byte[] encoded = check ser.serialize(member1);
 
     Proto3SerDes des = check new(Member);
     Member decoded = <Member>check des.deserialize(encoded);
 
-    test:assertEquals(decoded, member2);
+    test:assertEquals(decoded, member1);
 }
 
 type NilMember record {
@@ -334,6 +334,6 @@ public function testNil() returns error? {
     Proto3SerDes des = check new(DorN);
     DorN decoded = <DorN>check des.deserialize(encoded);
 
-    io:println(encoded);
+    io:println(decoded);
     test:assertEquals(decoded, ());
 }

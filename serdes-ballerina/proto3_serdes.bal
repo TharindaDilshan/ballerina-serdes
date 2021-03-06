@@ -16,7 +16,7 @@
 
 import ballerina/jballerina.java;
 
-class Proto3SerDes {
+public class Proto3SerDes {
     *SerDes;
 
     private typedesc<anydata> dataType;

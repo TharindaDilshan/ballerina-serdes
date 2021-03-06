@@ -42,6 +42,7 @@ public class DataTypeMapper {
         javaTypeToProto = new HashMap<>();
         javaTypeToProto.put("Double", "double");
         javaTypeToProto.put("Float", "double");
+        javaTypeToProto.put("DecimalValue", "double");
         javaTypeToProto.put("Integer", "sint64");
         javaTypeToProto.put("Long", "sint64");
         javaTypeToProto.put("Boolean", "bool");

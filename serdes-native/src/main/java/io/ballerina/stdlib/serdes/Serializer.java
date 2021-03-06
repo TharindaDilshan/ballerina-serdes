@@ -25,10 +25,7 @@ import com.google.protobuf.DynamicMessage;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.values.BArray;
-import io.ballerina.runtime.api.values.BMap;
-import io.ballerina.runtime.api.values.BObject;
-import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.*;
 
 import java.util.Locale;
 import java.util.Map;
@@ -50,12 +47,10 @@ public class Serializer {
     static final String ATOMIC_FIELD_NAME = "atomicField";
     static final String ARRAY_FIELD_NAME = "arrayField";
 
-    static final String BYTE = "bytes";
     static final String STRING = "string";
     static final String FLOAT = "float";
     static final String DOUBLE = "double";
     static final String ARRAY = "ArrayValueImpl";
-    static final String MESSAGE = "message";
 
     /**
      * Creates a BArray for given data after serializing.
@@ -70,6 +65,8 @@ public class Serializer {
         DynamicMessage dynamicMessage;
         try {
             dynamicMessage = generateDynamicMessage(message, schema);
+        } catch (BError e) {
+            return e;
         } catch (Exception e) {
             return createSerdesError("Failed to Serialize data: " + e.getMessage(), SERDES_ERROR);
         }
@@ -157,7 +154,6 @@ public class Serializer {
                 generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element);
 
                 messageBuilder.addRepeatedField(field, nestedMessage.build());
-
             } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 String nestedTypeName = bArray.getElementType().getName().toUpperCase(Locale.ROOT);
                 Descriptor elementSchema = field.getContainingType().findNestedTypeByName(nestedTypeName);
@@ -195,11 +191,14 @@ public class Serializer {
                 FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
                 generateDynamicMessageForArray(newMessageFromSchema, schema, field, entry.getValue());
-            }else {
+            } else if (DataTypeMapper.getProtoTypeFromJavaType(entry.getValue().getClass().getSimpleName()) != null) {
                 String fieldName = entry.getKey().toString();
                 FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
                 generateDynamicMessageForPrimitive(newMessageFromSchema, field, entry.getValue());
+            } else {
+                String dataType = entry.getValue().getClass().getSimpleName();
+                throw createSerdesError("Unsupported data type: " + dataType, SERDES_ERROR);
             }
         }
         return newMessageFromSchema.build();
