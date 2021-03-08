@@ -35,7 +35,7 @@ public class Proto3SerDes {
     # + data - The value that is being serialized
     # + return - A byte array corresponding to the encoded value
     public isolated function serialize(anydata data) returns byte[]|Error {
-        return serialize(self, data);
+        return serialize(self, data, self.dataType);
     }
 
     # Deserializes a given array of bytes.
@@ -52,7 +52,7 @@ public function generateSchema(SerDes serdes, typedesc<anydata> T) returns Error
     'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
 }  external;
 
-public isolated function serialize(SerDes ser, anydata data) returns byte[]|Error = @java:Method {
+public isolated function serialize(SerDes ser, anydata data, typedesc<anydata> T) returns byte[]|Error = @java:Method {
     'class: "io.ballerina.stdlib.serdes.Serializer"
 }  external;
 

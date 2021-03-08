@@ -60,6 +60,7 @@ public class SchemaGenerator {
 
         try {
             protobufMessage = generateSchemaFromTypedesc(typedesc);
+//            System.out.println(protobufMessage.getProtobufMessage());
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -84,7 +85,8 @@ public class SchemaGenerator {
         Type type = null;
 
         if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            type = getTypeFromUnion(typedesc.getDescribingType());
+//            type = getTypeFromUnion(typedesc.getDescribingType());
+            return generateSchemaForUnion(typedesc.getDescribingType(), ATOMIC_FIELD_NAME);
         } else {
             type = typedesc.getDescribingType();
         }
@@ -214,5 +216,43 @@ public class SchemaGenerator {
         }
 
         return type;
+    }
+
+    private static ProtobufMessage generateSchemaForUnion(Type type, String name) {
+        String builderName = name.toUpperCase(Locale.getDefault());
+        UnionType unionType = (UnionType) type;
+
+        ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(builderName);
+
+        int number = 1;
+        for (Type memberType : unionType.getMemberTypes()) {
+            if (memberType.getTag() <= TypeTags.BOOLEAN_TAG) {
+                String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromTag(memberType.getTag());
+                String fieldName = ballerinaToProtoMap + "_" + name;
+
+                generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, fieldName, number);
+                number++;
+            } else if (memberType.getTag() == TypeTags.ARRAY_TAG) {
+                ArrayType arrayType = (ArrayType) memberType;
+                String fieldName = arrayType.getElementType().getName() + "_" + "array" + "_" + name;
+
+                generateSchemaForArray(messageBuilder, arrayType, fieldName, number);
+                number++;
+            } else if (memberType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                RecordType recordType = (RecordType) memberType;
+                String fieldName = memberType.getName() + "_" + name;
+
+                String[] elementNameHolder = recordType.getName().split(":");
+                String elementType = elementNameHolder[elementNameHolder.length - 1];
+
+                messageBuilder.addNestedMessage(generateSchemaForRecord(recordType.getFields(), recordType.getName()));
+                messageBuilder.addField("optional", elementType.toUpperCase(Locale.getDefault()), fieldName, number);
+                number++;
+            } else {
+                throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
+            }
+        }
+
+        return messageBuilder.build();
     }
 }

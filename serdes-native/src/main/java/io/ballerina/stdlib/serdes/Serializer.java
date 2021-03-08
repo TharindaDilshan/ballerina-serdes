@@ -23,8 +23,10 @@ import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.ballerina.runtime.api.TypeTags;
+import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.values.*;
 
 import java.util.Locale;
@@ -59,12 +61,12 @@ public class Serializer {
      * @param message Data that is being serialized.
      * @return Byte array of the serialized value.
      */
-    public static Object serialize(BObject serializer, Object message) {
+    public static Object serialize(BObject serializer, Object message, BTypedesc dataType) {
         Descriptor schema = (Descriptor) serializer.getNativeData(SCHEMA_NAME);
 
         DynamicMessage dynamicMessage;
         try {
-            dynamicMessage = generateDynamicMessage(message, schema);
+            dynamicMessage = generateDynamicMessage(message, schema, dataType);
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -76,7 +78,37 @@ public class Serializer {
         return bArray;
     }
 
-    private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema) {
+    private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema, BTypedesc type) {
+//        if (dataObject == null) {
+//            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+//            return newMessageFromSchema.build();
+//        }
+//
+//        Type type = dataType.getDescribingType();
+//        if (type.getTag() == TypeTags.UNION_TAG) {
+//            getTypeFromUnion(dataObject, dataType);
+//        }
+//
+//        if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
+//            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+//            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+//
+//            FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
+//
+//            generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
+//            return  newMessageFromSchema.build();
+//        } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+//            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+//            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+//
+//            FieldDescriptor field = messageDescriptor.findFieldByName(ARRAY_FIELD_NAME);
+//            generateDynamicMessageForArray(newMessageFromSchema, schema, field, dataObject);
+//            return  newMessageFromSchema.build();
+//        } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
+//            return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
+//        } else {
+//            throw createSerdesError("Unsupported data type: " + dataType, SERDES_ERROR);
+//        }
         if (dataObject == null) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             return newMessageFromSchema.build();
@@ -89,6 +121,11 @@ public class Serializer {
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
+
+            if (field == null) {
+                field = messageDescriptor.findFieldByName(ballerinaToProtoMap + "_" + ATOMIC_FIELD_NAME);
+            }
+
             generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
             return  newMessageFromSchema.build();
         }
@@ -203,4 +240,13 @@ public class Serializer {
         }
         return newMessageFromSchema.build();
     }
+
+//    private static void getTypeFromUnion(Object value, BTypedesc dataType) {
+//        UnionType unionType = (UnionType) dataType.getDescribingType();
+//
+//        for (Type member : unionType.getMemberTypes()) {
+//            System.out.println(DataTypeMapper.getProtoTypeFromTag(member.getTag()));
+//            System.out.println(DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName()));
+//        }
+//    }
 }
