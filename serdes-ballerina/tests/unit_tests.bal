@@ -339,12 +339,20 @@ type Member record {
 //}
 
 type unionType int|string;
+type unionArr unionType[];
+
+type MyRecord record {
+    unionType testType;
+};
 
 @test:Config{}
 public function testNil() returns error? {
 
-    Proto3SerDes ser = check new(unionType);
-    byte[] encoded = check ser.serialize("tharinda");
+    int[] nums = [1, 2, 3];
+    Member[] member1 = [{name: "foo", salary: 1.23}];
+
+    Proto3SerDes ser = check new(MyRecord);
+    //byte[] encoded = check ser.serialize(nums);
     //
     //Proto3SerDes des = check new(DorN);
     //DorN decoded = <DorN>check des.deserialize(encoded);

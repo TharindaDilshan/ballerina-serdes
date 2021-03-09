@@ -60,7 +60,7 @@ public class SchemaGenerator {
 
         try {
             protobufMessage = generateSchemaFromTypedesc(typedesc);
-//            System.out.println(protobufMessage.getProtobufMessage());
+            System.out.println(protobufMessage.getProtobufMessage());
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -85,8 +85,13 @@ public class SchemaGenerator {
         Type type = null;
 
         if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-//            type = getTypeFromUnion(typedesc.getDescribingType());
-            return generateSchemaForUnion(typedesc.getDescribingType(), ATOMIC_FIELD_NAME);
+            ProtobufMessage protobufMessage = generateSchemaForUnion(typedesc.getDescribingType(), "atomicUnion");
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("UnionBuilder");
+
+            messageBuilder.addNestedMessage(protobufMessage);
+            messageBuilder.addField("optional", "ATOMICUNION", ATOMIC_FIELD_NAME, 1);
+
+            return messageBuilder.build();
         } else {
             type = typedesc.getDescribingType();
         }
@@ -126,10 +131,9 @@ public class SchemaGenerator {
         Type type = arrayType.getElementType();
 
         if (type.getTag() == TypeTags.UNION_TAG) {
-            type = getTypeFromUnion(type);
-        }
-
-        if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
+            messageBuilder.addNestedMessage(generateSchemaForUnion(type, name));
+            messageBuilder.addField("repeated", name.toUpperCase(Locale.ROOT), name, number);
+        } else if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String protoElementType = DataTypeMapper.getProtoTypeFromTag(type.getTag());
 
             if (protoElementType.equals(BYTES)) {
@@ -173,10 +177,12 @@ public class SchemaGenerator {
             String fieldName = entry.getValue().getFieldName();
 
             if (fieldType.getTag() == TypeTags.UNION_TAG) {
-                fieldType = getTypeFromUnion(fieldType);
-            }
+                ProtobufMessage nestedMessage = generateSchemaForUnion(fieldType, fieldName);
+                String nestedFieldType = fieldName.toUpperCase(Locale.getDefault());
 
-            if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                messageBuilder.addNestedMessage(nestedMessage);
+                messageBuilder.addField("optional", nestedFieldType, fieldName, number);
+            } else if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 RecordType recordType = (RecordType) fieldType;
 
                 ProtobufMessage nestedMessage = generateSchemaForRecord(recordType.getFields(), fieldName);
@@ -202,22 +208,6 @@ public class SchemaGenerator {
         return messageBuilder.build();
     }
 
-    private static Type getTypeFromUnion(Type type) {
-        UnionType unionType = (UnionType) type;
-
-        if (unionType.getMemberTypes().size() == 2) {
-            for (Type member : unionType.getMemberTypes()) {
-                if (member.getTag() != TypeTags.NULL_TAG) {
-                    return member;
-                }
-            }
-        } else {
-            throw createSerdesError(UNSUPPORTED_DATA_TYPE + unionType.getMemberTypes(), SERDES_ERROR);
-        }
-
-        return type;
-    }
-
     private static ProtobufMessage generateSchemaForUnion(Type type, String name) {
         String builderName = name.toUpperCase(Locale.getDefault());
         UnionType unionType = (UnionType) type;
@@ -234,7 +224,11 @@ public class SchemaGenerator {
                 number++;
             } else if (memberType.getTag() == TypeTags.ARRAY_TAG) {
                 ArrayType arrayType = (ArrayType) memberType;
-                String fieldName = arrayType.getElementType().getName() + "_" + "array" + "_" + name;
+                String protoType = DataTypeMapper.getProtoTypeFromTag(arrayType.getElementType().getTag());
+                if (protoType == null) {
+                    protoType = arrayType.getElementType().getName();
+                }
+                String fieldName = protoType + "_array_" + name;
 
                 generateSchemaForArray(messageBuilder, arrayType, fieldName, number);
                 number++;
