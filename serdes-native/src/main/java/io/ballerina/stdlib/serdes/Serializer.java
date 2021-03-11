@@ -47,12 +47,13 @@ public class Serializer {
     static final String SCHEMA_NAME = "schema";
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
-    static final String ARRAY_FIELD_NAME = "arrayField";
+    static final String ARRAY_FIELD_NAME = "arrayfield";
 
     static final String STRING = "string";
     static final String FLOAT = "float";
     static final String DOUBLE = "double";
     static final String ARRAY = "ArrayValueImpl";
+    static final String MESSAGE = "message";
 
     /**
      * Creates a BArray for given data after serializing.
@@ -83,21 +84,19 @@ public class Serializer {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             return newMessageFromSchema.build();
         }
-
         Type type = bTypedesc.getDescribingType();
         if (type.getTag() == TypeTags.UNION_TAG) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
-            Descriptor unionSchema = schema.findNestedTypeByName("ATOMICUNION");
-            DynamicMessage nestedMessage = generateDynamicMessageForUnion(dataObject, unionSchema, "atomicUnion");
+            Descriptor unionSchema = schema.findNestedTypeByName("ATOMIC_UNION");
+            DynamicMessage nestedMessage = generateDynamicMessageForUnion(dataObject, unionSchema, "atomic_union");
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
 
             newMessageFromSchema.setField(field, nestedMessage);
-//            System.out.println(newMessageFromSchema);
-            return newMessageFromSchema.build();
 
+            return newMessageFromSchema.build();
         }
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
@@ -114,6 +113,8 @@ public class Serializer {
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ARRAY_FIELD_NAME);
             generateDynamicMessageForArray(newMessageFromSchema, schema, field, dataObject);
+//            System.out.println(newMessageFromSchema);
+
             return  newMessageFromSchema.build();
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
@@ -140,11 +141,11 @@ public class Serializer {
     private static void generateDynamicMessageForArray(DynamicMessage.Builder messageBuilder, Descriptor schema,
                                                                  FieldDescriptor field, Object value) {
         BArray bArray = (BArray) value;
+
         long len = bArray.size();
         Type type = bArray.getElementType();
-
         String fieldType = field.getType().name().toLowerCase(Locale.ROOT);
-//        Use field type instead of element type***
+
         if (type.getTag() == TypeTags.BYTE_TAG) {
             messageBuilder.setField(field, bArray.getBytes());
             return;
@@ -153,32 +154,52 @@ public class Serializer {
         for(long i = 0; i < len; i++) {
             Object element = bArray.get(i);
 
-            if (fieldType.equals(STRING)) {
-                messageBuilder.addRepeatedField(field, element.toString());
-            } else if (type.getTag() == TypeTags.FLOAT_TAG) {
-                messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
-            } else if (type.getTag() == TypeTags.DECIMAL_TAG) {
-                messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
-            } else if (type.getTag() == TypeTags.ARRAY_TAG) {
-                BArray nestedArray = (BArray) element;
-                Descriptor nestedSchema = schema.findNestedTypeByName(nestedArray.getElementType().getName().toUpperCase(Locale.ROOT));
+            boolean isUnion;
+            try {
+                isUnion = field.getMessageType().getName().toLowerCase(Locale.ROOT).contains("_union");
+            } catch(Exception e) {
+                isUnion = false;
+            }
 
-                DynamicMessage.Builder nestedMessage = DynamicMessage.newBuilder(nestedSchema);
-                Descriptor messageDescriptor = nestedMessage.getDescriptorForType();
-                FieldDescriptor fieldDescriptor = messageDescriptor.findFieldByName(nestedArray.getElementType().getName());
 
-                generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element);
-
-                messageBuilder.addRepeatedField(field, nestedMessage.build());
-            } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
-                String nestedTypeName = bArray.getElementType().getName().toUpperCase(Locale.ROOT);
+            if (fieldType.equals(MESSAGE) && isUnion) {
+                String nestedTypeName = field.getMessageType().getName();
                 Descriptor elementSchema = field.getContainingType().findNestedTypeByName(nestedTypeName);
+                String fieldName = nestedTypeName.toLowerCase(Locale.ROOT);
+
                 DynamicMessage elementDynamicMessage =
-                        generateDynamicMessageForRecord((BMap<BString, Object>) element, elementSchema);
+                        generateDynamicMessageForUnion(element, elementSchema, fieldName);
 
                 messageBuilder.addRepeatedField(field, elementDynamicMessage);
             } else {
-                messageBuilder.addRepeatedField(field, element);
+                if (fieldType.equals(STRING)) {
+                    messageBuilder.addRepeatedField(field, element.toString());
+                } else if (type.getTag() == TypeTags.FLOAT_TAG) {
+                    messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
+                } else if (type.getTag() == TypeTags.DECIMAL_TAG) {
+                    messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
+                } else if (type.getTag() == TypeTags.ARRAY_TAG) {
+                    BArray nestedArray = (BArray) element;
+                    String nestedTypeName = nestedArray.getElementType().getName();
+                    Descriptor nestedSchema = schema.findNestedTypeByName(nestedTypeName.toUpperCase(Locale.ROOT));
+
+                    DynamicMessage.Builder nestedMessage = DynamicMessage.newBuilder(nestedSchema);
+                    Descriptor messageDescriptor = nestedMessage.getDescriptorForType();
+                    FieldDescriptor fieldDescriptor = messageDescriptor.findFieldByName(nestedTypeName);
+
+                    generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element);
+
+                    messageBuilder.addRepeatedField(field, nestedMessage.build());
+                } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                    String nestedTypeName = bArray.getElementType().getName().toUpperCase(Locale.ROOT);
+                    Descriptor elementSchema = field.getContainingType().findNestedTypeByName(nestedTypeName);
+                    DynamicMessage elementDynamicMessage =
+                            generateDynamicMessageForRecord((BMap<BString, Object>) element, elementSchema);
+
+                    messageBuilder.addRepeatedField(field, elementDynamicMessage);
+                } else {
+                    messageBuilder.addRepeatedField(field, element);
+                }
             }
         }
 
@@ -194,29 +215,38 @@ public class Serializer {
                 continue;
             }
 
-            if (entry.getValue() instanceof BMap) {
-                String nestedTypeName = entry.getKey().toString().toUpperCase(Locale.getDefault());
-                Descriptor subMessageDescriptor = schema.findNestedTypeByName(nestedTypeName);
+            String ifUnionType = entry.getKey().toString() + "_union";
+            Descriptor unionDescriptor = messageDescriptor.findNestedTypeByName(ifUnionType.toUpperCase(Locale.ROOT));
 
-                BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
-                nestedTypeName = entry.getKey().toString();
-                DynamicMessage nestedMessage = generateDynamicMessageForRecord(objToBMap, subMessageDescriptor);
-                newMessageFromSchema.setField(messageDescriptor.findFieldByName(nestedTypeName), nestedMessage);
-            } else if (entry.getValue() instanceof BArray) {
-                String fieldName = entry.getKey().toString();
-                FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
-
-                generateDynamicMessageForArray(newMessageFromSchema, schema, field, entry.getValue());
-            } else if (DataTypeMapper.getProtoTypeFromJavaType(entry.getValue().getClass().getSimpleName()) != null) {
-                String fieldName = entry.getKey().toString();
-                FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
-
-                generateDynamicMessageForPrimitive(newMessageFromSchema, field, entry.getValue());
+            if (unionDescriptor != null) {
+                DynamicMessage nestedMessage = generateDynamicMessageForUnion(entry.getValue(), unionDescriptor, ifUnionType);
+                newMessageFromSchema.setField(messageDescriptor.findFieldByName(ifUnionType), nestedMessage);
             } else {
-                String dataType = entry.getValue().getClass().getSimpleName();
-                throw createSerdesError("Unsupported data type: " + dataType, SERDES_ERROR);
+                if (entry.getValue() instanceof BMap) {
+                    String nestedTypeName = entry.getKey().toString().toUpperCase(Locale.getDefault());
+                    Descriptor subMessageDescriptor = schema.findNestedTypeByName(nestedTypeName);
+
+                    BMap<BString, Object> objToBMap = (BMap<BString, Object>) entry.getValue();
+                    nestedTypeName = entry.getKey().toString();
+                    DynamicMessage nestedMessage = generateDynamicMessageForRecord(objToBMap, subMessageDescriptor);
+                    newMessageFromSchema.setField(messageDescriptor.findFieldByName(nestedTypeName), nestedMessage);
+                } else if (entry.getValue() instanceof BArray) {
+                    String fieldName = entry.getKey().toString();
+                    FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
+
+                    generateDynamicMessageForArray(newMessageFromSchema, schema, field, entry.getValue());
+                } else if (DataTypeMapper.getProtoTypeFromJavaType(entry.getValue().getClass().getSimpleName()) != null) {
+                    String fieldName = entry.getKey().toString();
+                    FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
+
+                    generateDynamicMessageForPrimitive(newMessageFromSchema, field, entry.getValue());
+                } else {
+                    String dataType = entry.getValue().getClass().getSimpleName();
+                    throw createSerdesError("Unsupported data type: " + dataType, SERDES_ERROR);
+                }
             }
         }
+//        System.out.println(newMessageFromSchema);
         return newMessageFromSchema.build();
     }
 
@@ -238,17 +268,28 @@ public class Serializer {
         // Non Primitive
         if (dataType.equals(ARRAY)) {
             BArray bArray = (BArray) value;
-            System.out.println(bArray.getElementType().getName());
-            Object objectType = bArray.get(0);
+            String elementType = DataTypeMapper.getProtoTypeFromJavaType(bArray.getElementType().getName());
 
-            String fieldName = DataTypeMapper.getProtoTypeFromJavaType(objectType.getClass().getSimpleName()) +  "_array_" + name;
+            if (elementType == null) {
+                elementType = bArray.getElementType().getName();
+            }
+
+            String fieldName = elementType +  "_array_" + name;
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
             generateDynamicMessageForArray(newMessageFromSchema, schema, field, value);
-            return  newMessageFromSchema.build();
         } else {
-            return generateDynamicMessageForRecord((BMap<BString, Object>) value, schema);
+            BMap<BString, Object> bMap = (BMap<BString, Object>) value;
+            String elementType = bMap.getTypedesc().getDescribingType().getName();
+            String fieldName = elementType + "_" + name;
+
+            Descriptor nestedSchema = schema.findNestedTypeByName(elementType.toUpperCase(Locale.ROOT));
+            DynamicMessage dynamicMessage = generateDynamicMessageForRecord(bMap, nestedSchema);
+
+            FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
+            newMessageFromSchema.setField(field, dynamicMessage);
         }
+        return  newMessageFromSchema.build();
 
     }
 

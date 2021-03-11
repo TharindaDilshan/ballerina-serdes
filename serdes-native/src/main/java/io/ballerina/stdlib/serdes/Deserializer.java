@@ -49,7 +49,7 @@ public class Deserializer {
     static final String DYNAMIC_MESSAGE = "DynamicMessage";
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
-    static final String ARRAY_FIELD_NAME = "arrayField";
+    static final String ARRAY_FIELD_NAME = "arrayfield";
 
     static final String SCHEMA_NAME = "schema";
 

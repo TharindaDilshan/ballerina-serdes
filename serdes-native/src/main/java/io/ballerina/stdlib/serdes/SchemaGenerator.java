@@ -40,7 +40,7 @@ public class SchemaGenerator {
     static final String SCHEMA_BUILDER_NAME = "Schema.proto";
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
-    static final String ARRAY_FIELD_NAME = "arrayField";
+    static final String ARRAY_FIELD_NAME = "arrayfield";
     static final String ARRAY_BUILDER_NAME = "ArrayBuilder";
 
     static final String BYTES = "bytes";
@@ -61,6 +61,7 @@ public class SchemaGenerator {
         try {
             protobufMessage = generateSchemaFromTypedesc(typedesc);
             System.out.println(protobufMessage.getProtobufMessage());
+            System.out.println("-----------------------------------------------------");
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -85,11 +86,11 @@ public class SchemaGenerator {
         Type type = null;
 
         if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            ProtobufMessage protobufMessage = generateSchemaForUnion(typedesc.getDescribingType(), "atomicUnion");
+            ProtobufMessage protobufMessage = generateSchemaForUnion(typedesc.getDescribingType(), "atomic_union");
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("UnionBuilder");
 
             messageBuilder.addNestedMessage(protobufMessage);
-            messageBuilder.addField("optional", "ATOMICUNION", ATOMIC_FIELD_NAME, 1);
+            messageBuilder.addField("optional", "ATOMIC_UNION", ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else {
@@ -131,8 +132,8 @@ public class SchemaGenerator {
         Type type = arrayType.getElementType();
 
         if (type.getTag() == TypeTags.UNION_TAG) {
-            messageBuilder.addNestedMessage(generateSchemaForUnion(type, name));
-            messageBuilder.addField("repeated", name.toUpperCase(Locale.ROOT), name, number);
+            messageBuilder.addNestedMessage(generateSchemaForUnion(type, name + "_union"));
+            messageBuilder.addField("repeated", name.toUpperCase(Locale.ROOT) + "_UNION", name, number);
         } else if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String protoElementType = DataTypeMapper.getProtoTypeFromTag(type.getTag());
 
@@ -177,6 +178,8 @@ public class SchemaGenerator {
             String fieldName = entry.getValue().getFieldName();
 
             if (fieldType.getTag() == TypeTags.UNION_TAG) {
+//                Add union identifier
+                fieldName = fieldName + "_union";
                 ProtobufMessage nestedMessage = generateSchemaForUnion(fieldType, fieldName);
                 String nestedFieldType = fieldName.toUpperCase(Locale.getDefault());
 

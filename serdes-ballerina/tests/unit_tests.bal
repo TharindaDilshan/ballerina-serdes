@@ -42,7 +42,7 @@ type Person record {
 
 type Student record {
    string name;
-   int? age;
+   int age;
    byte[] img;
    Contact[] contacts;
    Address address;
@@ -338,21 +338,32 @@ type Member record {
 //    test:assertEquals(decoded, ());
 //}
 
-type unionType int|string;
+type unionType int|string|TestMember;
 type unionArr unionType[];
 
 type MyRecord record {
+    string name;
     unionType testType;
+};
+
+type TestMember record {
+    string name;
+    int id;
 };
 
 @test:Config{}
 public function testNil() returns error? {
 
     int[] nums = [1, 2, 3];
-    Member[] member1 = [{name: "foo", salary: 1.23}];
+    unionType[] uArray = [1, 2, "tharinda"];
+
+    TestMember member = {name: "Tharinda", id: 101};
+    TestMember[] member1 = [{name: "foo", id: 100}];
+
+    MyRecord randomRecord = {name: "Tharinda", testType: 4};
 
     Proto3SerDes ser = check new(MyRecord);
-    //byte[] encoded = check ser.serialize(nums);
+    byte[] encoded = check ser.serialize(randomRecord);
     //
     //Proto3SerDes des = check new(DorN);
     //DorN decoded = <DorN>check des.deserialize(encoded);
