@@ -95,7 +95,8 @@ public class Serializer {
             FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
 
             newMessageFromSchema.setField(field, nestedMessage);
-
+            System.out.println(newMessageFromSchema);
+            System.out.println("-----------------------------------");
             return newMessageFromSchema.build();
         }
 
@@ -268,7 +269,7 @@ public class Serializer {
         // Non Primitive
         if (dataType.equals(ARRAY)) {
             BArray bArray = (BArray) value;
-            String elementType = DataTypeMapper.getProtoTypeFromJavaType(bArray.getElementType().getName());
+            String elementType = DataTypeMapper.getProtoTypeFromTag(bArray.getElementType().getTag());
 
             if (elementType == null) {
                 elementType = bArray.getElementType().getName();

@@ -90,7 +90,10 @@ public class Deserializer {
         Type type = null;
 
         if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            type = getTypeFromUnion(typedesc.getDescribingType());
+            FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
+            DynamicMessage dynamicMessageForUnion = (DynamicMessage) dynamicMessage.getField(fieldDescriptor);
+
+            return resolveUnionType(dynamicMessageForUnion, typedesc.getDescribingType(), schema);
         } else {
             type = typedesc.getDescribingType();
         }
@@ -175,7 +178,7 @@ public class Deserializer {
                     bArray.append(element);
                 }
             }
-
+            System.out.println(bArray);
             return bArray;
         }
     }
@@ -273,19 +276,59 @@ public class Deserializer {
         return null;
     }
 
-    private static Type getTypeFromUnion(Type type) {
-        UnionType unionType = (UnionType) type;
+    private static Object resolveUnionType(DynamicMessage dynamicMessage, Type type, Descriptor schema) {
+        for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
+//            System.out.println(entry);
+//            System.out.println(entry.getKey().getName());
+//            System.out.println(entry.getValue());
+            Object value = entry.getValue();
 
-        if (unionType.getMemberTypes().size() == 2) {
-            for (Type member : unionType.getMemberTypes()) {
-                if (member.getTag() != TypeTags.NULL_TAG) {
-                    return member;
-                }
+            if (value instanceof DynamicMessage) {
+                DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
+                Type recordType = getArrayElementTypeFromUnion(type, entry.getKey().getName());
+
+                Map<String, Object> mapObject = recordToBallerina(dynamicMessageForUnion, recordType, schema);
+
+                return ValueCreator.createRecordValue(recordType.getPackage(), recordType.getName(), mapObject);
+            } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
+                Type elementType = getArrayElementTypeFromUnion(type, entry.getKey().getName());
+
+                return arrayToBallerina(value, elementType, schema);
+            } else {
+                return primitiveToBallerina(entry.getValue());
             }
-        } else {
-            throw createSerdesError(UNSUPPORTED_DATA_TYPE + unionType.getMemberTypes(), SERDES_ERROR);
         }
 
-        return type;
+        return null;
+    }
+
+    private static Type getArrayElementTypeFromUnion(Type type, String fieldName) {
+        UnionType unionType = (UnionType) type;
+        String typeFromFieldName = fieldName.split("_")[0];
+
+        for (Type memberType : unionType.getMemberTypes()) {
+            if (memberType.getTag() == TypeTags.ARRAY_TAG) {
+                ArrayType arrayType = (ArrayType) memberType;
+
+                String elementType;
+                if (DataTypeMapper.getProtoTypeFromTag(arrayType.getElementType().getTag()) != null) {
+                    elementType = DataTypeMapper.getProtoTypeFromTag(arrayType.getElementType().getTag());
+                } else {
+                    elementType = arrayType.getElementType().getName();
+                }
+
+                if (typeFromFieldName.equals(elementType)) {
+                    return arrayType.getElementType();
+                }
+            } else if (memberType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                RecordType recordType = (RecordType) memberType;
+
+                if (recordType.getName().equals(typeFromFieldName)) {
+                    return recordType;
+                }
+            }
+        }
+
+        return null;
     }
 }
