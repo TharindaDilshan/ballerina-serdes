@@ -362,11 +362,11 @@ public function testNil() returns error? {
 
     MyRecord randomRecord = {name: "Tharinda", testType: member1};
 
-    Proto3SerDes ser = check new(unionArr);
-    byte[] encoded = check ser.serialize(uArray);
+    Proto3SerDes ser = check new(MyRecord);
+    byte[] encoded = check ser.serialize(randomRecord);
     //
-    Proto3SerDes des = check new(unionArr);
-    unionArr decoded = <unionArr>check des.deserialize(encoded);
+    Proto3SerDes des = check new(MyRecord);
+    MyRecord decoded = <MyRecord>check des.deserialize(encoded);
 
     //io:println(decoded);
     //test:assertEquals(decoded, ());
