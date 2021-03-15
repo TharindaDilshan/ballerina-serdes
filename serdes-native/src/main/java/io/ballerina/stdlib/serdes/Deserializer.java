@@ -105,6 +105,7 @@ public class Deserializer {
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) type;
             Type elementType = arrayType.getElementType();
+
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ARRAY_FIELD_NAME);
             schema = fieldDescriptor.getContainingType();
 
@@ -170,6 +171,10 @@ public class Deserializer {
                     BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
                                                                    elementType, schema);
                     bArray.append(nestedArray);
+                } else if (type.getTag() == TypeTags.UNION_TAG) {
+                    DynamicMessage dynamicMessageForUnion = (DynamicMessage) element;
+
+                    bArray.append(resolveUnionType(dynamicMessageForUnion, type, schema));
                 } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
                     Map<String, Object> mapObject = recordToBallerina((DynamicMessage) element, type, schema);
 
@@ -178,7 +183,7 @@ public class Deserializer {
                     bArray.append(element);
                 }
             }
-            System.out.println(bArray);
+
             return bArray;
         }
     }
@@ -285,13 +290,13 @@ public class Deserializer {
 
             if (value instanceof DynamicMessage) {
                 DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
-                Type recordType = getArrayElementTypeFromUnion(type, entry.getKey().getName());
+                Type recordType = getElementTypeFromUnion(type, entry.getKey().getName());
 
                 Map<String, Object> mapObject = recordToBallerina(dynamicMessageForUnion, recordType, schema);
 
                 return ValueCreator.createRecordValue(recordType.getPackage(), recordType.getName(), mapObject);
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
-                Type elementType = getArrayElementTypeFromUnion(type, entry.getKey().getName());
+                Type elementType = getElementTypeFromUnion(type, entry.getKey().getName());
 
                 return arrayToBallerina(value, elementType, schema);
             } else {
@@ -302,7 +307,7 @@ public class Deserializer {
         return null;
     }
 
-    private static Type getArrayElementTypeFromUnion(Type type, String fieldName) {
+    private static Type getElementTypeFromUnion(Type type, String fieldName) {
         UnionType unionType = (UnionType) type;
         String typeFromFieldName = fieldName.split("_")[0];
 

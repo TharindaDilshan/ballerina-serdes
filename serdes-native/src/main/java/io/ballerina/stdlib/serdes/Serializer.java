@@ -95,8 +95,7 @@ public class Serializer {
             FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
 
             newMessageFromSchema.setField(field, nestedMessage);
-            System.out.println(newMessageFromSchema);
-            System.out.println("-----------------------------------");
+
             return newMessageFromSchema.build();
         }
 
@@ -114,7 +113,6 @@ public class Serializer {
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ARRAY_FIELD_NAME);
             generateDynamicMessageForArray(newMessageFromSchema, schema, field, dataObject);
-//            System.out.println(newMessageFromSchema);
 
             return  newMessageFromSchema.build();
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
@@ -247,7 +245,7 @@ public class Serializer {
                 }
             }
         }
-//        System.out.println(newMessageFromSchema);
+
         return newMessageFromSchema.build();
     }
 

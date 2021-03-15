@@ -338,7 +338,7 @@ type Member record {
 //    test:assertEquals(decoded, ());
 //}
 
-type unionType int[]|string|TestMember;
+type unionType int|string[]|TestMember[];
 type unionArr unionType[];
 
 type MyRecord record {
@@ -355,18 +355,18 @@ type TestMember record {
 public function testNil() returns error? {
 
     int[] nums = [1, 2, 3];
-    //unionType[] uArray = [1, 2, "tharinda"];
+    TestMember[] member1 = [{name: "foo", id: 100}];
+    unionType[] uArray = [1, 2, ["tharinda", "dilshan"], member1];
 
     TestMember member = {name: "Tharinda", id: 101};
-    TestMember[] member1 = [{name: "foo", id: 100}];
 
-    MyRecord randomRecord = {name: "Tharinda", testType: member};
+    MyRecord randomRecord = {name: "Tharinda", testType: member1};
 
-    Proto3SerDes ser = check new(unionType);
-    byte[] encoded = check ser.serialize(member);
+    Proto3SerDes ser = check new(unionArr);
+    byte[] encoded = check ser.serialize(uArray);
     //
-    Proto3SerDes des = check new(unionType);
-    unionType decoded = <unionType>check des.deserialize(encoded);
+    Proto3SerDes des = check new(unionArr);
+    unionArr decoded = <unionArr>check des.deserialize(encoded);
 
     //io:println(decoded);
     //test:assertEquals(decoded, ());
