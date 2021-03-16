@@ -77,7 +77,7 @@ public class Deserializer {
         } catch (Exception e) {
             return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
         }
-
+        System.out.println(object);
         return object;
     }
 
@@ -112,7 +112,6 @@ public class Deserializer {
             return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema);
         } else {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
-//            System.out.println(mapObject);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
         }
@@ -198,8 +197,9 @@ public class Deserializer {
             if (value instanceof DynamicMessage) {
                 String[] processFieldName = entry.getKey().getName().split("_");
                 String unionCheck = processFieldName[processFieldName.length - 1];
+//                System.out.println(entry.getKey().getName());
 
-                if (unionCheck.equals("union")) {
+                if (unionCheck.contains("ballerinauniontype")) {
                     DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
                     Descriptor unionSchema =
                             schema.findNestedTypeByName(entry.getKey().getName().toUpperCase(Locale.ROOT));
@@ -307,6 +307,12 @@ public class Deserializer {
     private static Object resolveUnionType(DynamicMessage dynamicMessage, Type type, Descriptor schema) {
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
             Object value = entry.getValue();
+//            System.out.println(value);
+//            System.out.println(entry.getKey().getName());
+
+            if (entry.getKey().getName().equals("nullField") && value.equals("true")) {
+                return null;
+            }
 
             if (value instanceof DynamicMessage) {
                 DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
@@ -330,6 +336,7 @@ public class Deserializer {
     private static Type getElementTypeFromUnion(Type type, String fieldName) {
         UnionType unionType = (UnionType) type;
         String typeFromFieldName = fieldName.split("_")[0];
+//        System.out.println(fieldName);
 
         for (Type memberType : unionType.getMemberTypes()) {
             if (memberType.getTag() == TypeTags.ARRAY_TAG) {
@@ -351,6 +358,8 @@ public class Deserializer {
                 if (recordType.getName().equals(typeFromFieldName)) {
                     return recordType;
                 }
+            } else {
+                continue;
             }
         }
 

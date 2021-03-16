@@ -315,13 +315,13 @@ type Member record {
 //
 //    test:assertEquals(decoded, member1);
 //}
-
+//
 //type NilMember record {
 //    decimal? salary;
 //};
 //
 //type DorN decimal?;
-
+//
 //@test:Config{}
 //public function testNil() returns error? {
 //
@@ -337,9 +337,101 @@ type Member record {
 //    //io:println(decoded);
 //    test:assertEquals(decoded, ());
 //}
+//
+//type Union int|string|boolean;
+//
+//@test:Config{}
+//public function testUnionType() returns error? {
+//    Proto3SerDes ser = check new(Union);
+//    byte[] encoded = check ser.serialize(128);
+//
+//    Proto3SerDes des = check new(Union);
+//    Union decoded = <Union>check des.deserialize(encoded);
+//
+//    test:assertEquals(decoded, 128);
+//}
+//
+//type UnionWithArrays int[]|string[]|boolean;
+//
+//@test:Config{}
+//public function testUnionWithArrays() returns error? {
+//    int[] nums = [1, 9, 2, 1, 6, 8];
+//
+//    Proto3SerDes ser = check new(UnionWithArrays);
+//    byte[] encoded = check ser.serialize(nums);
+//
+//    Proto3SerDes des = check new(UnionWithArrays);
+//    UnionWithArrays decoded = <UnionWithArrays>check des.deserialize(encoded);
+//
+//    test:assertEquals(decoded, nums);
+//}
+//
+//type UnionMember record {
+//    string name;
+//    int id;
+//};
+//
+//type UnionWithRecord int|string[]|UnionMember;
+//
+//@test:Config{}
+//public function testUnionWithRecord() returns error? {
+//    UnionMember member = { name: "Jane", id:100 };
+//
+//    Proto3SerDes ser = check new(UnionWithRecord);
+//    byte[] encoded = check ser.serialize(member);
+//
+//    Proto3SerDes des = check new(UnionWithRecord);
+//    UnionWithRecord decoded = <UnionWithRecord>check des.deserialize(encoded);
+//
+//    test:assertEquals(decoded, member);
+//}
+//
+//type UnionElement int|string[]|UnionMember;
+//type UnionArray UnionElement[];
+//
+//@test:Config{}
+//public function testArrayOfUnionElements() returns error? {
+//    UnionMember member = { name: "Jane", id:100 };
+//    UnionElement[] array = [1, 2, ["John", "Doe"], member];
+//
+//    Proto3SerDes ser = check new(UnionArray);
+//    byte[] encoded = check ser.serialize(array);
+//
+//    Proto3SerDes des = check new(UnionArray);
+//    UnionArray decoded = <UnionArray>check des.deserialize(encoded);
+//
+//    test:assertEquals(decoded, array);
+//}
+//
+//type RecordWithUnionFields record {
+//    string name;
+//    UnionElement membership;
+//};
+//
+//@test:Config{}
+//public function testRecordWithUnionFields() returns error? {
+//    UnionMember member = { name: "Jane Doe", id:100 };
+//    RecordWithUnionFields rec = { name: "Jane", membership: member };
+//
+//    Proto3SerDes ser = check new(RecordWithUnionFields);
+//    byte[] encoded = check ser.serialize(rec);
+//
+//    Proto3SerDes des = check new(RecordWithUnionFields);
+//    RecordWithUnionFields decoded = <RecordWithUnionFields>check des.deserialize(encoded);
+//
+//    test:assertEquals(decoded, rec);
+//}
 
+//////////
 type unionType int|string[]|TestMember[];
 type unionArr unionType[];
+
+type newUnion int|string|();
+type newUnionArr newUnion[];
+type newUnionRecord record {
+    int id;
+    newUnion number;
+};
 
 type MyRecord record {
     string name;
@@ -352,7 +444,7 @@ type TestMember record {
 };
 
 @test:Config{}
-public function testNil() returns error? {
+public function testComplexUnion() returns error? {
 
     int[] nums = [1, 2, 3];
     TestMember[] member1 = [{name: "foo", id: 100}];
@@ -362,11 +454,14 @@ public function testNil() returns error? {
 
     MyRecord randomRecord = {name: "Tharinda", testType: member1};
 
-    Proto3SerDes ser = check new(MyRecord);
-    byte[] encoded = check ser.serialize(randomRecord);
+    newUnionArr newArr = [1, 2, (), "john"];
+    newUnionRecord test = { id:666, number:() };
+
+    Proto3SerDes ser = check new(newUnionRecord);
+    byte[] encoded = check ser.serialize(test);
     //
-    Proto3SerDes des = check new(MyRecord);
-    MyRecord decoded = <MyRecord>check des.deserialize(encoded);
+    Proto3SerDes des = check new(newUnionRecord);
+    newUnionRecord decoded = <newUnionRecord>check des.deserialize(encoded);
 
     //io:println(decoded);
     //test:assertEquals(decoded, ());

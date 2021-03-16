@@ -48,6 +48,7 @@ public class Serializer {
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
     static final String ARRAY_FIELD_NAME = "arrayfield";
+    static final String UNION_FIELD_NAME = "UnionField";
 
     static final String STRING = "string";
     static final String FLOAT = "float";
@@ -80,17 +81,17 @@ public class Serializer {
     }
 
     private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema, BTypedesc bTypedesc) {
-        if (dataObject == null) {
-            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
-            return newMessageFromSchema.build();
-        }
+//        if (dataObject == null) {
+//            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+//            return newMessageFromSchema.build();
+//        }
         Type type = bTypedesc.getDescribingType();
         if (type.getTag() == TypeTags.UNION_TAG) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
-            Descriptor unionSchema = schema.findNestedTypeByName("ATOMIC_UNION");
-            DynamicMessage nestedMessage = generateDynamicMessageForUnion(dataObject, unionSchema, "atomic_union");
+            Descriptor unionSchema = schema.findNestedTypeByName(UNION_FIELD_NAME.toUpperCase(Locale.ROOT));
+            DynamicMessage nestedMessage = generateDynamicMessageForUnion(dataObject, unionSchema, UNION_FIELD_NAME);
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
 
@@ -155,7 +156,7 @@ public class Serializer {
 
             boolean isUnion;
             try {
-                isUnion = field.getMessageType().getName().toLowerCase(Locale.ROOT).contains("_union");
+                isUnion = field.getMessageType().getName().toLowerCase(Locale.ROOT).contains("ballerinauniontype");
             } catch(Exception e) {
                 isUnion = false;
             }
@@ -210,17 +211,16 @@ public class Serializer {
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
         for (Map.Entry<BString, Object> entry : bMap.entrySet()) {
-            if (entry.getValue() == null) {
-                continue;
-            }
-
-            String ifUnionType = entry.getKey().toString() + "_union";
+            String ifUnionType = entry.getKey().toString() + "_ballerinauniontype";
             Descriptor unionDescriptor = messageDescriptor.findNestedTypeByName(ifUnionType.toUpperCase(Locale.ROOT));
 
             if (unionDescriptor != null) {
                 DynamicMessage nestedMessage = generateDynamicMessageForUnion(entry.getValue(), unionDescriptor, ifUnionType);
                 newMessageFromSchema.setField(messageDescriptor.findFieldByName(ifUnionType), nestedMessage);
             } else {
+                if (entry.getValue() == null) {
+                    continue;
+                }
                 if (entry.getValue() instanceof BMap) {
                     String nestedTypeName = entry.getKey().toString().toUpperCase(Locale.getDefault());
                     Descriptor subMessageDescriptor = schema.findNestedTypeByName(nestedTypeName);
@@ -252,6 +252,12 @@ public class Serializer {
     private static DynamicMessage generateDynamicMessageForUnion(Object value, Descriptor schema, String name) {
         DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+        if (value == null) {
+            FieldDescriptor field = messageDescriptor.findFieldByName("nullField");
+            newMessageFromSchema.setField(field, "true");
+            return newMessageFromSchema.build();
+        }
 
         String dataType = value.getClass().getSimpleName();
         String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromJavaType(dataType);
