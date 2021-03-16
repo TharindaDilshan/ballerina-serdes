@@ -49,6 +49,7 @@ public class Serializer {
     static final String ATOMIC_FIELD_NAME = "atomicField";
     static final String ARRAY_FIELD_NAME = "arrayfield";
     static final String UNION_FIELD_NAME = "UnionField";
+    static final String NULL_FIELD_NAME = "nullField";
 
     static final String STRING = "string";
     static final String FLOAT = "float";
@@ -81,12 +82,18 @@ public class Serializer {
     }
 
     private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema, BTypedesc bTypedesc) {
-//        if (dataObject == null) {
-//            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
-//            return newMessageFromSchema.build();
-//        }
         Type type = bTypedesc.getDescribingType();
-        if (type.getTag() == TypeTags.UNION_TAG) {
+
+        if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
+            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+            FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
+
+            generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
+
+            return  newMessageFromSchema.build();
+        } else if (type.getTag() == TypeTags.UNION_TAG) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
@@ -98,16 +105,6 @@ public class Serializer {
             newMessageFromSchema.setField(field, nestedMessage);
 
             return newMessageFromSchema.build();
-        }
-
-        if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
-            DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
-            Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
-
-            FieldDescriptor field = messageDescriptor.findFieldByName(ATOMIC_FIELD_NAME);
-
-            generateDynamicMessageForPrimitive(newMessageFromSchema, field, dataObject);
-            return  newMessageFromSchema.build();
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
@@ -254,7 +251,7 @@ public class Serializer {
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
         if (value == null) {
-            FieldDescriptor field = messageDescriptor.findFieldByName("nullField");
+            FieldDescriptor field = messageDescriptor.findFieldByName(NULL_FIELD_NAME);
             newMessageFromSchema.setField(field, "true");
             return newMessageFromSchema.build();
         }
@@ -270,7 +267,6 @@ public class Serializer {
             return newMessageFromSchema.build();
         }
 
-        // Non Primitive
         if (dataType.equals(ARRAY)) {
             BArray bArray = (BArray) value;
             String elementType = DataTypeMapper.getProtoTypeFromTag(bArray.getElementType().getTag());
@@ -294,8 +290,7 @@ public class Serializer {
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
             newMessageFromSchema.setField(field, dynamicMessage);
         }
+
         return  newMessageFromSchema.build();
-
     }
-
 }

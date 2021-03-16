@@ -44,6 +44,7 @@ public class SchemaGenerator {
     static final String ARRAY_BUILDER_NAME = "ArrayBuilder";
     static final String UNION_BUILDER_NAME = "UnionBuilder";
     static final String UNION_FIELD_NAME = "UnionField";
+    static final String NULL_FIELD_NAME = "nullField";
 
     static final String BYTES = "bytes";
 
@@ -85,19 +86,7 @@ public class SchemaGenerator {
     }
 
     private static ProtobufMessage generateSchemaFromTypedesc(BTypedesc typedesc) {
-        Type type = null;
-
-        if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            ProtobufMessage protobufMessage = generateSchemaForUnion(typedesc.getDescribingType(), UNION_FIELD_NAME);
-            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(UNION_BUILDER_NAME);
-
-            messageBuilder.addNestedMessage(protobufMessage);
-            messageBuilder.addField("optional", UNION_FIELD_NAME.toUpperCase(Locale.ROOT), ATOMIC_FIELD_NAME, 1);
-
-            return messageBuilder.build();
-        } else {
-            type = typedesc.getDescribingType();
-        }
+        Type type = typedesc.getDescribingType();
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromTag(type.getTag());
@@ -105,6 +94,14 @@ public class SchemaGenerator {
 
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(messageName);
             generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, ATOMIC_FIELD_NAME, 1);
+
+            return messageBuilder.build();
+        } else if (type.getTag() == TypeTags.UNION_TAG) {
+            ProtobufMessage protobufMessage = generateSchemaForUnion(typedesc.getDescribingType(), UNION_FIELD_NAME);
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(UNION_BUILDER_NAME);
+
+            messageBuilder.addNestedMessage(protobufMessage);
+            messageBuilder.addField("optional", UNION_FIELD_NAME.toUpperCase(Locale.ROOT), ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
@@ -180,7 +177,6 @@ public class SchemaGenerator {
             String fieldName = entry.getValue().getFieldName();
 
             if (fieldType.getTag() == TypeTags.UNION_TAG) {
-//                Add union identifier
                 fieldName = fieldName + "_ballerinauniontype";
                 ProtobufMessage nestedMessage = generateSchemaForUnion(fieldType, fieldName);
                 String nestedFieldType = fieldName.toUpperCase(Locale.getDefault());
@@ -228,7 +224,7 @@ public class SchemaGenerator {
                 generateSchemaForPrimitive(messageBuilder, ballerinaToProtoMap, fieldName, number);
                 number++;
             } else if (memberType.getTag() == TypeTags.NULL_TAG) {
-                messageBuilder.addField("optional", "string", "nullField", number);
+                messageBuilder.addField("optional", "string", NULL_FIELD_NAME, number);
                 number++;
             } else if (memberType.getTag() == TypeTags.ARRAY_TAG) {
                 ArrayType arrayType = (ArrayType) memberType;

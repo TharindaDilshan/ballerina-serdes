@@ -77,7 +77,7 @@ public class Deserializer {
         } catch (Exception e) {
             return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
         }
-        System.out.println(object);
+
         return object;
     }
 
@@ -87,21 +87,17 @@ public class Deserializer {
 
     private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc,
                                                         Descriptor schema) {
-        Type type = null;
-
-        if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
-            DynamicMessage dynamicMessageForUnion = (DynamicMessage) dynamicMessage.getField(fieldDescriptor);
-
-            return resolveUnionType(dynamicMessageForUnion, typedesc.getDescribingType(), schema);
-        } else {
-            type = typedesc.getDescribingType();
-        }
+        Type type = typedesc.getDescribingType();
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
 
             return primitiveToBallerina(dynamicMessage.getField(fieldDescriptor));
+        } else if (type.getTag() == TypeTags.UNION_TAG) {
+            FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
+            DynamicMessage dynamicMessageForUnion = (DynamicMessage) dynamicMessage.getField(fieldDescriptor);
+
+            return resolveUnionType(dynamicMessageForUnion, typedesc.getDescribingType(), schema);
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) type;
             Type elementType = arrayType.getElementType();
@@ -121,22 +117,10 @@ public class Deserializer {
         String valueInString = value.toString();
 
         if (value.getClass().getSimpleName().equals(STRING)) {
-            if (valueInString.equals("")) {
-                return null;
-            }
-
             return StringUtils.fromString(valueInString);
         } else if(value.getClass().getSimpleName().equals(FLOAT)) {
-            if (Double.valueOf(valueInString) == 0.0) {
-                return null;
-            }
-
             return Double.valueOf(valueInString);
         } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
-            if (Double.valueOf(valueInString) == 0.0) {
-                return null;
-            }
-
             return ValueCreator.createDecimalValue(valueInString);
         } else {
             return value;
@@ -258,21 +242,6 @@ public class Deserializer {
 
         for (Map.Entry<String, Field> entry: recordType.getFields().entrySet()) {
             Type fieldType = entry.getValue().getFieldType();
-
-//            if (fieldType.getTag() == TypeTags.UNION_TAG) {
-//                UnionType unionType = (UnionType) fieldType;
-//
-//                if (unionType.getMemberTypes().size() == 2) {
-//                    for (Type elementType : unionType.getMemberTypes()) {
-//                        if (elementType.getTag() != TypeTags.NULL_TAG) {
-//                            fieldType = elementType;
-//                            continue;
-//                        }
-//                    }
-//                } else {
-//                    throw createSerdesError("Unsupported data type: " + fieldType.getName(), SERDES_ERROR);
-//                }
-//            }
 
             if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG && entry.getKey().equals(fieldName)) {
                 return fieldType.getName();
