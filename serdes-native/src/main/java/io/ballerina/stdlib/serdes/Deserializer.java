@@ -50,10 +50,16 @@ public class Deserializer {
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
     static final String ARRAY_FIELD_NAME = "arrayfield";
+    static final String NULL_FIELD_NAME = "nullField";
 
     static final String SCHEMA_NAME = "schema";
 
+    static final String UNION_FIELD_NAME = "unionelement";
+    static private int unionFieldIdentifier = 1;
+
+
     static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
+    static final String DESERIALIZATION_ERROR_MESSAGE = "Failed to Deserialize data: ";
 
     /**
      * Creates an anydata object from a byte array after deserializing.
@@ -75,9 +81,10 @@ public class Deserializer {
         } catch (BError e) {
             return e;
         } catch (Exception e) {
-            return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
+            return createSerdesError(DESERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
+//        System.out.println(object);
         return object;
     }
 
@@ -147,10 +154,17 @@ public class Deserializer {
                 } else if (type.getTag() == TypeTags.ARRAY_TAG) {
                     ArrayType arrayType = (ArrayType) type;
                     Type elementType = arrayType.getElementType();
+                    String fieldName;
+                    if (elementType.getTag() == TypeTags.UNION_TAG) {
+                        fieldName = UNION_FIELD_NAME + unionFieldIdentifier;
+                        unionFieldIdentifier++;
+                    } else {
+                        fieldName = elementType.getName();
+                    }
 
-                    Descriptor nestedSchema = schema.findNestedTypeByName(elementType.getName().toUpperCase(Locale.ROOT));
+                    Descriptor nestedSchema = schema.findNestedTypeByName(fieldName.toUpperCase(Locale.ROOT));
                     DynamicMessage nestedDynamicMessage = (DynamicMessage) element;
-                    FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(elementType.getName());
+                    FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(fieldName);
 
                     BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
                                                                    elementType, schema);
@@ -227,10 +241,12 @@ public class Deserializer {
                     map.put(entry.getKey().getName(), handleArray);
                 }
 
-            } else {
+            } else if (DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName()) != null) {
                 Object handlePrimitive = primitiveToBallerina(entry.getValue());
 
                 map.put(entry.getKey().getName(), handlePrimitive);
+            } else {
+                throw createSerdesError(UNSUPPORTED_DATA_TYPE + value.getClass().getSimpleName(), SERDES_ERROR);
             }
         }
 
@@ -276,10 +292,8 @@ public class Deserializer {
     private static Object resolveUnionType(DynamicMessage dynamicMessage, Type type, Descriptor schema) {
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
             Object value = entry.getValue();
-//            System.out.println(value);
-//            System.out.println(entry.getKey().getName());
 
-            if (entry.getKey().getName().equals("nullField") && value.equals("true")) {
+            if (entry.getKey().getName().equals(NULL_FIELD_NAME) && value.equals("true")) {
                 return null;
             }
 

@@ -81,6 +81,7 @@ public class SchemaGenerator {
             return createSerdesError(SCHEMA_GENERATION_FAILURE + e.getMessage(), SERDES_ERROR);
         }
         serdes.addNativeData(SCHEMA_NAME, schema);
+        unionId = 1;
 
         return null;
     }
@@ -126,6 +127,7 @@ public class SchemaGenerator {
         messageBuilder.addField("optional", type, name, number);
     }
 
+    static private int unionId = 1;
     private static void generateSchemaForArray(ProtobufMessageBuilder messageBuilder, ArrayType arrayType,
                                                String name, int number) {
         Type type = arrayType.getElementType();
@@ -143,7 +145,15 @@ public class SchemaGenerator {
             }
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType nestedArrayType = (ArrayType) type;
-            String nestedMessageName = nestedArrayType.getElementType().getName();
+            String nestedMessageName;
+            if (nestedArrayType.getElementType().getTag() == TypeTags.UNION_TAG) {
+                nestedMessageName = "unionelement" + unionId;
+                unionId++;
+            } else {
+                nestedMessageName = nestedArrayType.getElementType().getName();
+            }
+//            String nestedMessageName = nestedArrayType.getElementType().getName();
+//            String nestedMessageName = name;
 
             ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName.toUpperCase(Locale.ROOT));
             generateSchemaForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1);

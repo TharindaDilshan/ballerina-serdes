@@ -51,11 +51,17 @@ public class Serializer {
     static final String UNION_FIELD_NAME = "UnionField";
     static final String NULL_FIELD_NAME = "nullField";
 
+    static final String NESTED_UNION_FIELD_NAME = "unionelement";
+    static private int unionFieldIdentifier = 1;
+
     static final String STRING = "string";
     static final String FLOAT = "float";
     static final String DOUBLE = "double";
     static final String ARRAY = "ArrayValueImpl";
     static final String MESSAGE = "message";
+
+    static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
+    static final String SERIALIZATION_ERROR_MESSAGE = "Failed to Serialize data: ";
 
     /**
      * Creates a BArray for given data after serializing.
@@ -73,7 +79,7 @@ public class Serializer {
         } catch (BError e) {
             return e;
         } catch (Exception e) {
-            return createSerdesError("Failed to Serialize data: " + e.getMessage(), SERDES_ERROR);
+            return createSerdesError(SERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
         BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
@@ -116,7 +122,7 @@ public class Serializer {
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
         } else {
-            throw createSerdesError("Unsupported data type: " + type.getName(), SERDES_ERROR);
+            throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
     }
 
@@ -177,7 +183,15 @@ public class Serializer {
                     messageBuilder.addRepeatedField(field, Double.valueOf(element.toString()));
                 } else if (type.getTag() == TypeTags.ARRAY_TAG) {
                     BArray nestedArray = (BArray) element;
-                    String nestedTypeName = nestedArray.getElementType().getName();
+
+                    String nestedTypeName;
+                    if (nestedArray.getElementType().getTag() == TypeTags.UNION_TAG) {
+                        nestedTypeName = NESTED_UNION_FIELD_NAME + unionFieldIdentifier;
+                        unionFieldIdentifier++;
+                    } else {
+                        nestedTypeName = nestedArray.getElementType().getName();
+                    }
+//                    String nestedTypeName = nestedArray.getElementType().getName();
                     Descriptor nestedSchema = schema.findNestedTypeByName(nestedTypeName.toUpperCase(Locale.ROOT));
 
                     DynamicMessage.Builder nestedMessage = DynamicMessage.newBuilder(nestedSchema);
@@ -238,7 +252,7 @@ public class Serializer {
                     generateDynamicMessageForPrimitive(newMessageFromSchema, field, entry.getValue());
                 } else {
                     String dataType = entry.getValue().getClass().getSimpleName();
-                    throw createSerdesError("Unsupported data type: " + dataType, SERDES_ERROR);
+                    throw createSerdesError(UNSUPPORTED_DATA_TYPE + dataType, SERDES_ERROR);
                 }
             }
         }

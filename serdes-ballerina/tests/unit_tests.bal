@@ -425,6 +425,7 @@ public function testRecordWithUnionFields() returns error? {
 //////////
 type unionType int|string[]|TestMember[];
 type unionArr unionType[];
+type nestedUnionArr unionArr[];
 
 type newUnion int|string|();
 type newUnionArr newUnion[];
@@ -449,6 +450,7 @@ public function testComplexUnion() returns error? {
     int[] nums = [1, 2, 3];
     TestMember[] member1 = [{name: "foo", id: 100}];
     unionType[] uArray = [1, 2, ["tharinda", "dilshan"], member1];
+    unionArr[] nestedArray = [uArray];
 
     TestMember member = {name: "Tharinda", id: 101};
 
@@ -457,11 +459,11 @@ public function testComplexUnion() returns error? {
     newUnionArr newArr = [1, 2, (), "john"];
     newUnionRecord test = { id:666, number:() };
 
-    Proto3SerDes ser = check new(newUnionRecord);
-    byte[] encoded = check ser.serialize(test);
+    Proto3SerDes ser = check new(nestedUnionArr);
+    byte[] encoded = check ser.serialize(nestedArray);
     //
-    Proto3SerDes des = check new(newUnionRecord);
-    newUnionRecord decoded = <newUnionRecord>check des.deserialize(encoded);
+    Proto3SerDes des = check new(nestedUnionArr);
+    nestedUnionArr decoded = <nestedUnionArr>check des.deserialize(encoded);
 
     //io:println(decoded);
     //test:assertEquals(decoded, ());
