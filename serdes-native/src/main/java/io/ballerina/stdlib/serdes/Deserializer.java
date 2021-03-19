@@ -55,6 +55,7 @@ public class Deserializer {
     static final String SCHEMA_NAME = "schema";
 
     static final String UNION_FIELD_NAME = "unionelement";
+    static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
     static private int unionFieldIdentifier = 1;
 
 
@@ -84,7 +85,6 @@ public class Deserializer {
             return createSerdesError(DESERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
-//        System.out.println(object);
         return object;
     }
 
@@ -195,9 +195,8 @@ public class Deserializer {
             if (value instanceof DynamicMessage) {
                 String[] processFieldName = entry.getKey().getName().split("_");
                 String unionCheck = processFieldName[processFieldName.length - 1];
-//                System.out.println(entry.getKey().getName());
 
-                if (unionCheck.contains("ballerinauniontype")) {
+                if (unionCheck.contains(UNION_TYPE_IDENTIFIER)) {
                     DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
                     Descriptor unionSchema =
                             schema.findNestedTypeByName(entry.getKey().getName().toUpperCase(Locale.ROOT));
@@ -318,8 +317,7 @@ public class Deserializer {
 
     private static Type getElementTypeFromUnion(Type type, String fieldName) {
         UnionType unionType = (UnionType) type;
-        String typeFromFieldName = fieldName.split("_")[0];
-//        System.out.println(fieldName);
+        String typeFromFieldName = fieldName.split("__")[0];
 
         for (Type memberType : unionType.getMemberTypes()) {
             if (memberType.getTag() == TypeTags.ARRAY_TAG) {
