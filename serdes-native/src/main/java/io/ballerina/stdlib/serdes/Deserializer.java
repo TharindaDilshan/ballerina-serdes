@@ -113,10 +113,12 @@ public class Deserializer {
             schema = fieldDescriptor.getContainingType();
 
             return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema);
-        } else {
+        } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
+        } else {
+            throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
     }
 

@@ -299,6 +299,9 @@ public class Serializer {
             String fieldName = elementType + "__" + name;
 
             Descriptor nestedSchema = schema.findNestedTypeByName(elementType.toUpperCase(Locale.ROOT));
+            if (nestedSchema == null) {
+                nestedSchema = schema.findNestedTypeByName(elementType.toUpperCase(Locale.ROOT) + "RECORD");
+            }
             DynamicMessage dynamicMessage = generateDynamicMessageForRecord(bMap, nestedSchema);
 
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);

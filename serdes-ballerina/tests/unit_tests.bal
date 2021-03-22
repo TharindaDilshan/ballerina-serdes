@@ -414,13 +414,13 @@ public function testRecordWithUnionFields() returns error? {
     test:assertEquals(decoded, rec);
 }
 
-type UnionType int|string[]|TestMember[];
+type UnionType int|string[]|TestMember[]|TestMember;
 type UnionTypeArray UnionType[];
 type OutermostArray UnionTypeArray[];
 
 @test:Config{}
 public function testNestedArrayWithUnionFields() returns error? {
-    TestMember[] member1 = [{full_name: "foo", id: 100}];
+    TestMember member1 = {full_name: "foo", id: 100};
     UnionType[] uType = [1, 2, ["tharinda", "dilshan"], member1];
     UnionTypeArray[] uArray = [uType];
 
@@ -433,7 +433,6 @@ public function testNestedArrayWithUnionFields() returns error? {
     test:assertEquals(decoded, uArray);
 }
 
-//////////
 type newUnion int|string|();
 type newUnionArr newUnion[];
 type newUnionRecord record {
@@ -462,7 +461,6 @@ public function testComplexUnion() returns error? {
     int[] nums = [1, 2, 3];
     TestMember[] member1 = [{full_name: "foo", id: 100}];
     UnionType[] uArray = [1, 2, ["tharinda", "dilshan"], member1];
-    //UnionArray[] nestedArray = [uArray];
 
     TestMember member = {full_name: "Tharinda", id: 101};
 
@@ -475,12 +473,11 @@ public function testComplexUnion() returns error? {
 
     Proto3SerDes ser = check new(MyRecord);
     byte[] encoded = check ser.serialize(randomRecord);
-    //
+
     Proto3SerDes des = check new(MyRecord);
     MyRecord decoded = <MyRecord>check des.deserialize(encoded);
 
-    //io:println(decoded);
-    //test:assertEquals(decoded, ());
+    test:assertEquals(decoded, randomRecord);
 }
 
 @test:Config{}
@@ -494,4 +491,33 @@ public function testByteArrayForNull() returns error? {
     newUnion decoded = <newUnion>check des.deserialize(encoded);
 
     test:assertEquals(decoded, nullType);
+}
+
+type Employer record {
+    string name;
+    int id;
+    byte[] img;
+};
+
+type Employee record {
+    string name;
+    int id;
+    byte[] img;
+    string department;
+};
+
+type Individual Employer|Employee;
+
+@test:Config{}
+public function randomTest() returns error? {
+    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
+    Employer employer = {name: "John Doe", id: 101, img: byteArray};
+
+    Proto3SerDes ser = check new(Individual);
+    byte[] encoded = check ser.serialize(employer);
+
+    Proto3SerDes des = check new(Individual);
+    Individual decoded = <Individual>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, employer);
 }
