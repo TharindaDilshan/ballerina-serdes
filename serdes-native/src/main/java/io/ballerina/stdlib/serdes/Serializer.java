@@ -53,7 +53,6 @@ public class Serializer {
 
     static final String NESTED_UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
-    static private int unionFieldIdentifier = 1;
 
     static final String STRING = "string";
     static final String FLOAT = "float";
@@ -83,9 +82,7 @@ public class Serializer {
             return createSerdesError(SERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
-        BArray bArray = ValueCreator.createArrayValue(dynamicMessage.toByteArray());
-
-        return bArray;
+        return ValueCreator.createArrayValue(dynamicMessage.toByteArray());
     }
 
     private static DynamicMessage generateDynamicMessage(Object dataObject, Descriptor schema, BTypedesc bTypedesc) {
@@ -117,7 +114,7 @@ public class Serializer {
             Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
             FieldDescriptor field = messageDescriptor.findFieldByName(ARRAY_FIELD_NAME);
-            generateDynamicMessageForArray(newMessageFromSchema, schema, field, dataObject);
+            generateDynamicMessageForArray(newMessageFromSchema, schema, field, dataObject, 1);
 
             return  newMessageFromSchema.build();
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
@@ -132,10 +129,12 @@ public class Serializer {
         String fieldType = DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName());
 
         if (fieldType.equals(STRING)) {
-            messageBuilder.setField(field, value.toString());
+            BString bString = (BString) value;
+            messageBuilder.setField(field, bString.getValue());
         } else if (fieldType.equals(FLOAT)) {
             messageBuilder.setField(field, Float.valueOf(value.toString()));
         } else if (fieldType.equals(DOUBLE)) {
+            // convert to bigdecimal
             messageBuilder.setField(field, Double.valueOf(value.toString()));
         } else {
             messageBuilder.setField(field, value);
@@ -143,7 +142,7 @@ public class Serializer {
     }
 
     private static void generateDynamicMessageForArray(DynamicMessage.Builder messageBuilder, Descriptor schema,
-                                                                 FieldDescriptor field, Object value) {
+                                                       FieldDescriptor field, Object value, int unionFieldIdentifier) {
         BArray bArray = (BArray) value;
 
         long len = bArray.size();
@@ -188,6 +187,9 @@ public class Serializer {
                     String nestedTypeName;
                     if (nestedArray.getElementType().getTag() == TypeTags.UNION_TAG) {
                         nestedTypeName = NESTED_UNION_FIELD_NAME + unionFieldIdentifier;
+//                        unionFieldIdentifier++;
+                    } else if (nestedArray.getElementType().getTag() == TypeTags.ARRAY_TAG) {
+                        nestedTypeName = NESTED_UNION_FIELD_NAME + unionFieldIdentifier;
                         unionFieldIdentifier++;
                     } else {
                         nestedTypeName = nestedArray.getElementType().getName();
@@ -198,7 +200,7 @@ public class Serializer {
                     Descriptor messageDescriptor = nestedMessage.getDescriptorForType();
                     FieldDescriptor fieldDescriptor = messageDescriptor.findFieldByName(nestedTypeName);
 
-                    generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element);
+                    generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element, unionFieldIdentifier);
 
                     messageBuilder.addRepeatedField(field, nestedMessage.build());
                 } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
@@ -244,7 +246,7 @@ public class Serializer {
                     String fieldName = entry.getKey().toString();
                     FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
-                    generateDynamicMessageForArray(newMessageFromSchema, schema, field, entry.getValue());
+                    generateDynamicMessageForArray(newMessageFromSchema, schema, field, entry.getValue(), 1);
                 } else if (DataTypeMapper.getProtoTypeFromJavaType(entry.getValue().getClass().getSimpleName()) != null) {
                     String fieldName = entry.getKey().toString();
                     FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
@@ -266,7 +268,7 @@ public class Serializer {
 
         if (value == null) {
             FieldDescriptor field = messageDescriptor.findFieldByName(NULL_FIELD_NAME);
-            newMessageFromSchema.setField(field, "true");
+            newMessageFromSchema.setField(field, true);
             return newMessageFromSchema.build();
         }
 
@@ -292,7 +294,7 @@ public class Serializer {
             String fieldName = elementType +  "__array_" + name;
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
-            generateDynamicMessageForArray(newMessageFromSchema, schema, field, value);
+            generateDynamicMessageForArray(newMessageFromSchema, schema, field, value, 1);
         } else {
             BMap<BString, Object> bMap = (BMap<BString, Object>) value;
             String elementType = bMap.getTypedesc().getDescribingType().getName();

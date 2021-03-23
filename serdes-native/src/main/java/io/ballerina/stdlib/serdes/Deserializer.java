@@ -56,8 +56,6 @@ public class Deserializer {
 
     static final String UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
-    static private int unionFieldIdentifier = 1;
-
 
     static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
     static final String DESERIALIZATION_ERROR_MESSAGE = "Failed to Deserialize data: ";
@@ -112,7 +110,7 @@ public class Deserializer {
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ARRAY_FIELD_NAME);
             schema = fieldDescriptor.getContainingType();
 
-            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema);
+            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema, 1);
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
 
@@ -124,7 +122,7 @@ public class Deserializer {
 
     private static Object primitiveToBallerina(Object value) {
         String valueInString = value.toString();
-
+        // cast and convert
         if (value.getClass().getSimpleName().equals(STRING)) {
             return StringUtils.fromString(valueInString);
         } else if(value.getClass().getSimpleName().equals(FLOAT)) {
@@ -136,7 +134,7 @@ public class Deserializer {
         }
     }
 
-    private static Object arrayToBallerina(Object value, Type type, Descriptor schema) {
+    private static Object arrayToBallerina(Object value, Type type, Descriptor schema, int unionFieldIdentifier) {
         if (value.getClass().getSimpleName().equals(BYTE)) {
             ByteString byteString = (ByteString) value;
 
@@ -159,6 +157,9 @@ public class Deserializer {
                     String fieldName;
                     if (elementType.getTag() == TypeTags.UNION_TAG) {
                         fieldName = UNION_FIELD_NAME + unionFieldIdentifier;
+//                        unionFieldIdentifier++;
+                    } else if (elementType.getTag() == TypeTags.ARRAY_TAG) {
+                        fieldName = UNION_FIELD_NAME + unionFieldIdentifier;
                         unionFieldIdentifier++;
                     } else {
                         fieldName = elementType.getName();
@@ -169,7 +170,8 @@ public class Deserializer {
                     FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(fieldName);
 
                     BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
-                                                                   elementType, schema);
+                                                                   elementType, nestedSchema, unionFieldIdentifier);
+
                     bArray.append(nestedArray);
                 } else if (type.getTag() == TypeTags.UNION_TAG) {
                     DynamicMessage dynamicMessageForUnion = (DynamicMessage) element;
@@ -233,11 +235,11 @@ public class Deserializer {
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
                 if (!value.getClass().getSimpleName().equals(BYTE)) {
                     Type elementType = getArrayElementType(type, entry.getKey().getName());
-                    Object handleArray = arrayToBallerina(entry.getValue(), elementType, schema);
+                    Object handleArray = arrayToBallerina(entry.getValue(), elementType, schema, 1);
 
                     map.put(entry.getKey().getName(), handleArray);
                 } else {
-                    Object handleArray = arrayToBallerina(entry.getValue(), type, schema);
+                    Object handleArray = arrayToBallerina(entry.getValue(), type, schema, 1);
 
                     map.put(entry.getKey().getName(), handleArray);
                 }
@@ -294,7 +296,7 @@ public class Deserializer {
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
             Object value = entry.getValue();
 
-            if (entry.getKey().getName().equals(NULL_FIELD_NAME) && value.equals("true")) {
+            if (entry.getKey().getName().equals(NULL_FIELD_NAME) && (Boolean) value) {
                 return null;
             }
 
@@ -308,7 +310,7 @@ public class Deserializer {
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
                 Type elementType = getElementTypeFromUnion(type, entry.getKey().getName());
 
-                return arrayToBallerina(value, elementType, schema);
+                return arrayToBallerina(value, elementType, schema, 1);
             } else {
                 return primitiveToBallerina(entry.getValue());
             }
@@ -341,8 +343,6 @@ public class Deserializer {
                 if (recordType.getName().equals(typeFromFieldName)) {
                     return recordType;
                 }
-            } else {
-                continue;
             }
         }
 

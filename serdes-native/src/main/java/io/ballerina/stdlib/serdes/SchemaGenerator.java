@@ -50,7 +50,6 @@ public class SchemaGenerator {
 
     static final String NESTED_UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
-    static private int unionFieldIdentifier = 1;
 
     static final String BYTES = "bytes";
 
@@ -85,7 +84,6 @@ public class SchemaGenerator {
             return createSerdesError(SCHEMA_GENERATION_FAILURE + e.getMessage(), SERDES_ERROR);
         }
         serdes.addNativeData(SCHEMA_NAME, schema);
-        unionFieldIdentifier = 1;
 
         return null;
     }
@@ -113,7 +111,7 @@ public class SchemaGenerator {
             ArrayType arrayType = (ArrayType) type;
 
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(ARRAY_BUILDER_NAME);
-            buildProtobufMessageForArray(messageBuilder, arrayType, ARRAY_FIELD_NAME, 1);
+            buildProtobufMessageForArray(messageBuilder, arrayType, ARRAY_FIELD_NAME, 1, 1);
 
             return messageBuilder.build();
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
@@ -132,7 +130,7 @@ public class SchemaGenerator {
     }
 
     private static void buildProtobufMessageForArray(ProtobufMessageBuilder messageBuilder, ArrayType arrayType,
-                                                     String name, int number) {
+                                                     String name, int number, int unionFieldIdentifier) {
         Type type = arrayType.getElementType();
 
         if (type.getTag() == TypeTags.UNION_TAG) {
@@ -150,7 +148,9 @@ public class SchemaGenerator {
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType nestedArrayType = (ArrayType) type;
             String nestedMessageName;
-            if (nestedArrayType.getElementType().getTag() == TypeTags.UNION_TAG) {
+
+            int elementTag = nestedArrayType.getElementType().getTag();
+            if (elementTag == TypeTags.UNION_TAG || elementTag == TypeTags.ARRAY_TAG) {
                 nestedMessageName = NESTED_UNION_FIELD_NAME + unionFieldIdentifier;
                 unionFieldIdentifier++;
             } else {
@@ -158,7 +158,7 @@ public class SchemaGenerator {
             }
 
             ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName.toUpperCase(Locale.ROOT));
-            buildProtobufMessageForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1);
+            buildProtobufMessageForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1, unionFieldIdentifier);
 
             messageBuilder.addNestedMessage(nestedMessageBuilder.build());
             messageBuilder.addField(REPEATED_LABEL, nestedMessageName.toUpperCase(Locale.ROOT), name, number);
@@ -207,7 +207,7 @@ public class SchemaGenerator {
             } else if (fieldType.getTag() == TypeTags.ARRAY_TAG) {
                 ArrayType arrayType = (ArrayType) fieldType;
 
-                buildProtobufMessageForArray(messageBuilder, arrayType, fieldName, number);
+                buildProtobufMessageForArray(messageBuilder, arrayType, fieldName, number, 1);
             } else if (fieldType.getTag() <= TypeTags.BOOLEAN_TAG) {
                 String protoFieldType = DataTypeMapper.getProtoTypeFromTag(fieldType.getTag());
 
@@ -236,7 +236,7 @@ public class SchemaGenerator {
                 buildProtobufMessageForPrimitive(messageBuilder, ballerinaToProtoMap, fieldName, number);
                 number++;
             } else if (memberType.getTag() == TypeTags.NULL_TAG) {
-                messageBuilder.addField(OPTIONAL_LABEL, "string", NULL_FIELD_NAME, number);
+                messageBuilder.addField(OPTIONAL_LABEL, "bool", NULL_FIELD_NAME, number);
                 number++;
             } else if (memberType.getTag() == TypeTags.ARRAY_TAG) {
                 ArrayType arrayType = (ArrayType) memberType;
@@ -246,7 +246,7 @@ public class SchemaGenerator {
                 }
                 String fieldName = protoType + "__array_" + name;
 
-                buildProtobufMessageForArray(messageBuilder, arrayType, fieldName, number);
+                buildProtobufMessageForArray(messageBuilder, arrayType, fieldName, number, 1);
                 number++;
             } else if (memberType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 RecordType recordType = (RecordType) memberType;

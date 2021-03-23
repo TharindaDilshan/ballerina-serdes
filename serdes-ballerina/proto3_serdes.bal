@@ -25,7 +25,7 @@ public class Proto3SerDes {
     #
     # + ballerinaDataType - The data type of the value that needs to be serialized
     # + return - `serdes:Error` if the data type is not supported else nil
-    public function init(typedesc<anydata> ballerinaDataType) returns Error? {
+    public isolated function init(typedesc<anydata> ballerinaDataType) returns Error? {
         self.dataType = ballerinaDataType;
         check generateSchema(self, ballerinaDataType);
     }
@@ -47,7 +47,7 @@ public class Proto3SerDes {
     }
 }
 
-public function generateSchema(SerDes serdes, typedesc<anydata> T) returns Error? =
+public isolated function generateSchema(SerDes serdes, typedesc<anydata> T) returns Error? =
 @java:Method {
     'class: "io.ballerina.stdlib.serdes.SchemaGenerator"
 }  external;
