@@ -528,22 +528,26 @@ public isolated function randomTest() returns error? {
     test:assertEquals(decoded, employer);
 }
 
-type P record {
+type Cont record {
+    string mobile;
+};
+
+type President record {
     string name;
-    record {
-        string mobile;
-    } contact;
+    Cont contact;
 };
 
 @test:Config{}
 public isolated function myTest() returns error? {
-    P p = {name: "tharinda", contact: {mobile: "123456"}};
+    President p = {name: "tharinda", contact: {mobile: "123456"}};
 
-    Proto3SerDes ser = check new(P);
+    Proto3SerDes ser = check new(President);
     byte[] encoded = check ser.serialize(p);
 
-    Proto3SerDes des = check new(P);
-    P decoded = <P>check des.deserialize(encoded);
+    Proto3SerDes des = check new(President);
+    President decoded = <President>check des.deserialize(encoded);
 
+    //string file = "bytes.bin";
+    //check io:fileWriteBytes(file, encoded);
     test:assertEquals(decoded, p);
 }

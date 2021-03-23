@@ -165,7 +165,7 @@ public class Deserializer {
                         fieldName = elementType.getName();
                     }
 
-                    Descriptor nestedSchema = schema.findNestedTypeByName(fieldName.toUpperCase(Locale.ROOT));
+                    Descriptor nestedSchema = schema.findNestedTypeByName(fieldName);
                     DynamicMessage nestedDynamicMessage = (DynamicMessage) element;
                     FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(fieldName);
 
@@ -194,19 +194,21 @@ public class Deserializer {
         Map<String, Object> map = new HashMap();
 
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
+            String fieldName = entry.getKey().getName();
             Object value = entry.getValue();
 
             if (value instanceof DynamicMessage) {
-                String[] processFieldName = entry.getKey().getName().split("_");
+                DynamicMessage nestedDynamicMessage = (DynamicMessage) value;
+
+                String fieldType = nestedDynamicMessage.getDescriptorForType().getName();
+
+                String[] processFieldName = fieldType.split("_");
                 String unionCheck = processFieldName[processFieldName.length - 1];
 
                 if (unionCheck.contains(UNION_TYPE_IDENTIFIER)) {
-                    DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
-                    Descriptor unionSchema =
-                            schema.findNestedTypeByName(entry.getKey().getName().toUpperCase(Locale.ROOT));
+                    Descriptor unionSchema = schema.findNestedTypeByName(fieldType);
 
                     Type unionType = null;
-                    String fieldName = entry.getKey().getName().substring(0, entry.getKey().getName().lastIndexOf("_"));
                     RecordType recordType = (RecordType) type;
 
                     for (Map.Entry<String, Field> member: recordType.getFields().entrySet()) {
@@ -216,13 +218,11 @@ public class Deserializer {
                         }
                     }
 
-                    map.put(fieldName, resolveUnionType(dynamicMessageForUnion, unionType, unionSchema));
+                    map.put(fieldName, resolveUnionType(nestedDynamicMessage, unionType, unionSchema));
 
                 } else {
-                    DynamicMessage msg = (DynamicMessage) entry.getValue();
-
-                    Map<String, Object> nestedMap = recordToBallerina(msg, type, schema);
-                    String recordTypeName = getRecordTypeName(type, entry.getKey().getName());
+                    Map<String, Object> nestedMap = recordToBallerina(nestedDynamicMessage, type, schema);
+                    String recordTypeName = getRecordTypeName(type, fieldName);
 
                     BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
                             type.getPackage(),
@@ -230,24 +230,24 @@ public class Deserializer {
                             nestedMap
                     );
 
-                    map.put(entry.getKey().getName(), nestedRecord);
+                    map.put(fieldName, nestedRecord);
                 }
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
                 if (!value.getClass().getSimpleName().equals(BYTE)) {
-                    Type elementType = getArrayElementType(type, entry.getKey().getName());
-                    Object handleArray = arrayToBallerina(entry.getValue(), elementType, schema, 1);
+                    Type elementType = getArrayElementType(type, fieldName);
+                    Object handleArray = arrayToBallerina(value, elementType, schema, 1);
 
-                    map.put(entry.getKey().getName(), handleArray);
+                    map.put(fieldName, handleArray);
                 } else {
-                    Object handleArray = arrayToBallerina(entry.getValue(), type, schema, 1);
+                    Object handleArray = arrayToBallerina(value, type, schema, 1);
 
-                    map.put(entry.getKey().getName(), handleArray);
+                    map.put(fieldName, handleArray);
                 }
 
             } else if (DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName()) != null) {
-                Object handlePrimitive = primitiveToBallerina(entry.getValue());
+                Object handlePrimitive = primitiveToBallerina(value);
 
-                map.put(entry.getKey().getName(), handlePrimitive);
+                map.put(fieldName, handlePrimitive);
             } else {
                 throw createSerdesError(UNSUPPORTED_DATA_TYPE + value.getClass().getSimpleName(), SERDES_ERROR);
             }

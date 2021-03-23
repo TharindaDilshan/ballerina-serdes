@@ -68,6 +68,7 @@ public class SchemaGenerator {
 
         try {
             protobufMessage = buildProtobufMessageFromTypedesc(typedesc);
+//            System.out.println(protobufMessage.getProtobufMessage());
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -93,9 +94,8 @@ public class SchemaGenerator {
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromTag(type.getTag());
-            String messageName = ballerinaToProtoMap.toUpperCase(Locale.getDefault());
 
-            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(messageName);
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(ballerinaToProtoMap);
             buildProtobufMessageForPrimitive(messageBuilder, ballerinaToProtoMap, ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
@@ -104,7 +104,7 @@ public class SchemaGenerator {
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(UNION_BUILDER_NAME);
 
             messageBuilder.addNestedMessage(protobufMessage);
-            messageBuilder.addField(OPTIONAL_LABEL, UNION_FIELD_NAME.toUpperCase(Locale.ROOT), ATOMIC_FIELD_NAME, 1);
+            messageBuilder.addField(OPTIONAL_LABEL, UNION_FIELD_NAME, ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
@@ -136,7 +136,7 @@ public class SchemaGenerator {
         if (type.getTag() == TypeTags.UNION_TAG) {
             String fieldName = name + "_" + UNION_TYPE_IDENTIFIER;
             messageBuilder.addNestedMessage(buildProtobufMessageForUnion(type, fieldName));
-            messageBuilder.addField(REPEATED_LABEL, fieldName.toUpperCase(Locale.ROOT), name, number);
+            messageBuilder.addField(REPEATED_LABEL, fieldName, name, number);
         } else if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             String protoElementType = DataTypeMapper.getProtoTypeFromTag(type.getTag());
 
@@ -157,11 +157,11 @@ public class SchemaGenerator {
                 nestedMessageName = nestedArrayType.getElementType().getName();
             }
 
-            ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName.toUpperCase(Locale.ROOT));
+            ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName);
             buildProtobufMessageForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1, unionFieldIdentifier);
 
             messageBuilder.addNestedMessage(nestedMessageBuilder.build());
-            messageBuilder.addField(REPEATED_LABEL, nestedMessageName.toUpperCase(Locale.ROOT), name, number);
+            messageBuilder.addField(REPEATED_LABEL, nestedMessageName, name, number);
 
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             RecordType recordType = (RecordType) type;
@@ -170,7 +170,7 @@ public class SchemaGenerator {
             String elementType = elementNameHolder[elementNameHolder.length - 1];
 
             messageBuilder.addNestedMessage(buildProtobufMessageForRecord(recordType.getFields(), recordType.getName()));
-            messageBuilder.addField(REPEATED_LABEL, elementType.toUpperCase(Locale.getDefault()), name, number);
+            messageBuilder.addField(REPEATED_LABEL, elementType, name, number);
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
@@ -179,9 +179,7 @@ public class SchemaGenerator {
     }
 
     private static ProtobufMessage buildProtobufMessageForRecord(Map<String, Field> dataTypeMap, String name) {
-        String builderName = name.toUpperCase(Locale.getDefault());
-
-        ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(builderName);
+        ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(name);
 
         int number = 1;
         for (Map.Entry<String, Field> entry : dataTypeMap.entrySet()) {
@@ -189,17 +187,16 @@ public class SchemaGenerator {
             String fieldName = entry.getValue().getFieldName();
 
             if (fieldType.getTag() == TypeTags.UNION_TAG) {
-                fieldName = fieldName + "_" + UNION_TYPE_IDENTIFIER;
-                ProtobufMessage nestedMessage = buildProtobufMessageForUnion(fieldType, fieldName);
-                String nestedFieldType = fieldName.toUpperCase(Locale.getDefault());
+                String unionFieldType = fieldName + "_" + UNION_TYPE_IDENTIFIER;
+                ProtobufMessage nestedMessage = buildProtobufMessageForUnion(fieldType, unionFieldType);
 
                 messageBuilder.addNestedMessage(nestedMessage);
-                messageBuilder.addField(OPTIONAL_LABEL, nestedFieldType, fieldName, number);
+                messageBuilder.addField(OPTIONAL_LABEL, unionFieldType, fieldName, number);
             } else if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 RecordType recordType = (RecordType) fieldType;
 
-                ProtobufMessage nestedMessage = buildProtobufMessageForRecord(recordType.getFields(), fieldName);
-                String nestedFieldType = fieldName.toUpperCase(Locale.getDefault());
+                ProtobufMessage nestedMessage = buildProtobufMessageForRecord(recordType.getFields(), recordType.getName());
+                String nestedFieldType = recordType.getName();
 
                 messageBuilder.addNestedMessage(nestedMessage);
                 messageBuilder.addField(OPTIONAL_LABEL, nestedFieldType, fieldName, number);
@@ -222,10 +219,9 @@ public class SchemaGenerator {
     }
 
     private static ProtobufMessage buildProtobufMessageForUnion(Type type, String name) {
-        String builderName = name.toUpperCase(Locale.getDefault());
         UnionType unionType = (UnionType) type;
 
-        ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(builderName);
+        ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(name);
 
         int number = 1;
         for (Type memberType : unionType.getMemberTypes()) {
@@ -257,7 +253,7 @@ public class SchemaGenerator {
 
                 messageBuilder.addNestedMessage(buildProtobufMessageForRecord(recordType.getFields(),
                         recordType.getName() + "record"));
-                messageBuilder.addField(OPTIONAL_LABEL, elementType.toUpperCase(Locale.getDefault()), fieldName, number);
+                messageBuilder.addField(OPTIONAL_LABEL, elementType, fieldName, number);
                 number++;
             } else {
                 throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
