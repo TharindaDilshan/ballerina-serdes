@@ -56,6 +56,7 @@ public class Deserializer {
 
     static final String UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
+    static final String UNION_FIELD_SEPARATOR = "__";
 
     static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
     static final String DESERIALIZATION_ERROR_MESSAGE = "Failed to Deserialize data: ";
@@ -284,8 +285,6 @@ public class Deserializer {
                 return arrayType.getElementType();
             } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
                 return getArrayElementType(entry.getValue().getFieldType(), fieldName);
-            } else {
-                continue;
             }
         }
 
@@ -321,7 +320,7 @@ public class Deserializer {
 
     private static Type getElementTypeFromUnion(Type type, String fieldName) {
         UnionType unionType = (UnionType) type;
-        String typeFromFieldName = fieldName.split("__")[0];
+        String typeFromFieldName = fieldName.split(UNION_FIELD_SEPARATOR)[0];
 
         for (Type memberType : unionType.getMemberTypes()) {
             if (memberType.getTag() == TypeTags.ARRAY_TAG) {

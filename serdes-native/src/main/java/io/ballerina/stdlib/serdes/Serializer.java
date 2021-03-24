@@ -54,6 +54,7 @@ public class Serializer {
 
     static final String NESTED_UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
+    static final String UNION_FIELD_SEPARATOR = "__";
 
     static final String STRING = "string";
     static final String FLOAT = "float";
@@ -277,7 +278,7 @@ public class Serializer {
         String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromJavaType(dataType);
 
         if (ballerinaToProtoMap != null) {
-            String fieldName = ballerinaToProtoMap + "__" + name;
+            String fieldName = ballerinaToProtoMap + UNION_FIELD_SEPARATOR + name;
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
             generateDynamicMessageForPrimitive(newMessageFromSchema, field, value);
@@ -292,14 +293,14 @@ public class Serializer {
                 elementType = bArray.getElementType().getName();
             }
 
-            String fieldName = elementType +  "__array_" + name;
+            String fieldName = elementType + UNION_FIELD_SEPARATOR + "array_" + name;
             FieldDescriptor field = messageDescriptor.findFieldByName(fieldName);
 
             generateDynamicMessageForArray(newMessageFromSchema, schema, field, value, 1);
         } else {
             BMap<BString, Object> bMap = (BMap<BString, Object>) value;
             String elementType = bMap.getTypedesc().getDescribingType().getName();
-            String fieldName = elementType + "__" + name;
+            String fieldName = elementType + UNION_FIELD_SEPARATOR + name;
 
             Descriptor nestedSchema = schema.findNestedTypeByName(elementType);
             if (nestedSchema == null) {

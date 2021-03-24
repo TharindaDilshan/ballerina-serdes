@@ -25,7 +25,6 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BTypedesc;
 
-import java.util.Locale;
 import java.util.Map;
 
 import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
@@ -50,6 +49,7 @@ public class SchemaGenerator {
 
     static final String NESTED_UNION_FIELD_NAME = "unionelement";
     static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
+    static final String UNION_FIELD_SEPARATOR = "__";
 
     static final String BYTES = "bytes";
 
@@ -68,7 +68,6 @@ public class SchemaGenerator {
 
         try {
             protobufMessage = buildProtobufMessageFromTypedesc(typedesc);
-//            System.out.println(protobufMessage.getProtobufMessage());
         } catch (BError e) {
             return e;
         } catch (Exception e) {
@@ -227,7 +226,7 @@ public class SchemaGenerator {
         for (Type memberType : unionType.getMemberTypes()) {
             if (memberType.getTag() <= TypeTags.BOOLEAN_TAG) {
                 String ballerinaToProtoMap = DataTypeMapper.getProtoTypeFromTag(memberType.getTag());
-                String fieldName = ballerinaToProtoMap + "__" + name;
+                String fieldName = ballerinaToProtoMap + UNION_FIELD_SEPARATOR + name;
 
                 buildProtobufMessageForPrimitive(messageBuilder, ballerinaToProtoMap, fieldName, number);
                 number++;
@@ -240,13 +239,13 @@ public class SchemaGenerator {
                 if (protoType == null) {
                     protoType = arrayType.getElementType().getName();
                 }
-                String fieldName = protoType + "__array_" + name;
+                String fieldName = protoType + UNION_FIELD_SEPARATOR + "array_" + name;
 
                 buildProtobufMessageForArray(messageBuilder, arrayType, fieldName, number, 1);
                 number++;
             } else if (memberType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 RecordType recordType = (RecordType) memberType;
-                String fieldName = memberType.getName() + "__" + name;
+                String fieldName = memberType.getName() + UNION_FIELD_SEPARATOR + name;
 
                 String[] elementNameHolder = recordType.getName().split(":");
                 String elementType = elementNameHolder[elementNameHolder.length - 1] + "record";
