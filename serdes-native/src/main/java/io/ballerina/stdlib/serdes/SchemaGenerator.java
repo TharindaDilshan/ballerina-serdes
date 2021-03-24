@@ -70,8 +70,6 @@ public class SchemaGenerator {
             protobufMessage = buildProtobufMessageFromTypedesc(typedesc);
         } catch (BError e) {
             return e;
-        } catch (Exception e) {
-            return createSerdesError(SCHEMA_GENERATION_FAILURE + e.getMessage(), SERDES_ERROR);
         }
 
         ProtobufSchemaBuilder schemaBuilder = ProtobufSchemaBuilder.newSchemaBuilder(SCHEMA_BUILDER_NAME);

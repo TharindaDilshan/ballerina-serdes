@@ -37,8 +37,6 @@ import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
 
 /**
  * Deserializer class to generate an object from a byte array.
- *
- * @return Object
  */
 public class Deserializer {
 
@@ -80,7 +78,7 @@ public class Deserializer {
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
         } catch (BError e) {
             return e;
-        } catch (Exception e) {
+        } catch (InvalidProtocolBufferException e) {
             return createSerdesError(DESERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
@@ -123,15 +121,16 @@ public class Deserializer {
 
     private static Object primitiveToBallerina(Object value) {
         String valueInString = value.toString();
-        // cast and convert
-        if (value.getClass().getSimpleName().equals(STRING)) {
-            return StringUtils.fromString(valueInString);
-        } else if(value.getClass().getSimpleName().equals(FLOAT)) {
-            return Double.valueOf(valueInString);
-        } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
-            return ValueCreator.createDecimalValue(valueInString);
-        } else {
-            return value;
+
+        switch (value.getClass().getSimpleName()) {
+            case STRING:
+                return StringUtils.fromString(valueInString);
+            case FLOAT:
+                return (Double)value;
+            case DOUBLE:
+                return ValueCreator.createDecimalValue(valueInString);
+            default:
+                return value;
         }
     }
 

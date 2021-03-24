@@ -23,11 +23,8 @@ import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.RecordType;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.values.*;
 
 import java.util.Locale;
@@ -38,10 +35,6 @@ import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
 
 /**
  * Serializer class to create a byte array for a value.
- *
- * @return BArray.
- * @throws DescriptorValidationException
- * @exception DescriptorValidationException
  */
 public class Serializer {
 
@@ -130,16 +123,20 @@ public class Serializer {
                                                            FieldDescriptor field, Object value) {
         String fieldType = DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName());
 
-        if (fieldType.equals(STRING)) {
-            BString bString = (BString) value;
-            messageBuilder.setField(field, bString.getValue());
-        } else if (fieldType.equals(FLOAT)) {
-            messageBuilder.setField(field, Float.valueOf(value.toString()));
-        } else if (fieldType.equals(DOUBLE)) {
-            // convert to bigdecimal
-            messageBuilder.setField(field, Double.valueOf(value.toString()));
-        } else {
-            messageBuilder.setField(field, value);
+        switch (fieldType) {
+            case STRING:
+                BString bString = (BString) value;
+                messageBuilder.setField(field, bString.getValue());
+                break;
+            case FLOAT:
+                messageBuilder.setField(field, (Float) value);
+                break;
+            case DOUBLE:
+                messageBuilder.setField(field, (Double) value);
+                break;
+            default:
+                messageBuilder.setField(field, value);
+                break;
         }
     }
 

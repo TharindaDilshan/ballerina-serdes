@@ -21,17 +21,18 @@ description = 'Ballerina - SerDes Ballerina'
 
 def packageName = "serdes"
 def packageOrg = "ballerina"
-def tomlVersion = project.version.split("-")[0]
+def platform = "java11"
+def snapshotVersion = "-SNAPSHOT"
+def tomlVersion = project.version.replace("${snapshotVersion}", "")
 def ballerinaConfigFile = new File("$project.projectDir/Ballerina.toml")
 def ballerinaDependencyFile = new File("$project.projectDir/Dependencies.toml")
 def artifactBallerinaDocs = file("$project.projectDir/build/docs_parent/")
 def artifactCacheParent = file("$project.projectDir/build/cache_parent/")
 def artifactLibParent = file("$project.projectDir/build/lib_parent/")
-def artifactCodeCoverageReport = file("$project.projectDir/target/cache/tests_cache/coverage/ballerina.exec")
-def artifactTestableJar = file("$project.projectDir/target/cache/${packageOrg}/${packageName}/${tomlVersion}/java11/")
 def ballerinaCentralAccessToken = System.getenv('BALLERINA_CENTRAL_ACCESS_TOKEN')
 def originalConfig = ballerinaConfigFile.text
 def originalDependencies = ballerinaDependencyFile.text
+def testCoverageParam = "--code-coverage --includes=io.ballerina.stdlib.serdes.*:ballerina.*"
 def distributionBinPath = project.projectDir.absolutePath + "/build/target/extracted-distributions/" +
         "jballerina-tools-zip/jballerina-tools-${ballerinaLangVersion}/bin"
 
@@ -106,7 +107,7 @@ task copyStdlibs(type: Copy) {
 
 task updateTomlFile {
     doLast {
-        def stdlibDependentIoVersion = project.stdlibIoVersion.split("-")[0]
+        def stdlibDependentIoVersion = project.stdlibIoVersion.replace("${snapshotVersion}", "")
 
         def newConfig = ballerinaConfigFile.text.replace("@project.version@", project.version)
         newConfig = newConfig.replace("@toml.version@", tomlVersion)
@@ -154,7 +155,7 @@ task initializeVariables {
         }
 
         if (graph.hasTask(":${packageName}-ballerina:test")) {
-            testParams = "--code-coverage --includes=*"
+            testParams = "${testCoverageParam}"
         } else {
             testParams = "--skip-tests"
         }
@@ -174,11 +175,11 @@ task ballerinaTest {
             environment "JAVA_OPTS", "-DBALLERINA_DEV_COMPILE_BALLERINA_ORG=true"
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                 commandLine 'cmd', '/c', "$balJavaDebugParam $distributionBinPath/bal.bat test " +
-                        "--code-coverage --includes=* ${groupParams} ${disableGroups} ${debugParams} && " +
+                        "${testCoverageParam} ${groupParams} ${disableGroups} ${debugParams} && " +
                         "exit %%ERRORLEVEL%%"
             } else {
                 commandLine 'sh', '-c', "$balJavaDebugParam $distributionBinPath/bal test " +
-                        "--code-coverage --includes=* ${groupParams} ${disableGroups} ${debugParams}"
+                        "${testCoverageParam} ${groupParams} ${disableGroups} ${debugParams}"
             }
         }
     }
@@ -193,15 +194,18 @@ task ballerinaBuild {
             workingDir project.projectDir
             environment "JAVA_OPTS", "-DBALLERINA_DEV_COMPILE_BALLERINA_ORG=true"
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                commandLine 'cmd', '/c', "$balJavaDebugParam $distributionBinPath/bal.bat build " +
+                commandLine 'cmd', '/c', "$balJavaDebugParam $distributionBinPath/bal.bat build -c " +
                         "$testParams ${debugParams} && exit %%ERRORLEVEL%%"
             } else {
-                commandLine 'sh', '-c', "$balJavaDebugParam $distributionBinPath/bal build $testParams ${debugParams}"
+                commandLine 'sh', '-c', "$balJavaDebugParam $distributionBinPath/bal build -c $testParams ${debugParams}"
             }
         }
-        copy {
-            from file("$project.projectDir/target/bala")
-            into file("$artifactCacheParent/bala/${packageOrg}/${packageName}/${tomlVersion}")
+        // extract bala file to artifact cache directory
+        file("$project.projectDir/target/bala").eachFileMatch(~/.*.bala/) { balaFile ->
+            copy {
+                from zipTree(balaFile)
+                into file("$artifactCacheParent/bala/${packageOrg}/${packageName}/${tomlVersion}/${platform}")
+            }
         }
         copy {
             from file("$project.projectDir/target/cache")
@@ -258,26 +262,16 @@ task createArtifactZip(type: Zip) {
     from ballerinaBuild
 }
 
-task createTestableJarZip(type: Zip) {
-    archiveName("${packageOrg}-${packageName}-${project.version}-testable-jars.zip")
-    destinationDir(file("${buildDir}/distributions"))
-    from ("${artifactTestableJar}") {
-        include '**/*-testable.jar'
-    }
-}
-
 publishing {
     publications {
         maven(MavenPublication) {
             artifact source: createArtifactZip, extension: 'zip'
-            artifact source: artifactCodeCoverageReport, classifier: 'jacoco'
-            artifact source: createTestableJarZip, classifier: 'testable-jars', extension: 'zip'
         }
     }
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/ballerina-platform/module-ballerina-serdes")
+            url = uri("https://maven.pkg.github.com/ballerina-platform/module-${packageOrg}-${packageName}")
             credentials {
                 username = System.getenv("packageUser")
                 password = System.getenv("packagePAT")
@@ -310,5 +304,3 @@ ballerinaPublish.dependsOn updateTomlFile
 ballerinaPublish.dependsOn initializeVariables
 ballerinaPublish.finalizedBy revertTomlFile
 publish.dependsOn ballerinaPublish
-
-createTestableJarZip.dependsOn ballerinaBuild
