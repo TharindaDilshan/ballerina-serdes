@@ -290,7 +290,7 @@ public isolated function testComplexRecord() returns error? {
 
 type Member record {
     string name;
-    decimal salary;
+    decimal? salary;
     Contact contact?;
 };
 
