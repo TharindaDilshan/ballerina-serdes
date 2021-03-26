@@ -63,8 +63,6 @@ type Arrays record {
     byte[] byteArray;
 };
 
-type JSON json;
-
 type StringArray string[];
 type IntArray int[];
 type ByteArray byte[];
@@ -73,9 +71,6 @@ type DecimalArray float[];
 type BoolArray boolean[];
 
 type RecordArray Contact[];
-type CustomerTable table<map<any>>;
-
-type myanydata ()|boolean|int|float|decimal|string|map<myanydata>|myanydata[];
 
 @test:Config{}
 public function testPrimitiveFloat() returns error? {
@@ -282,7 +277,7 @@ public function testComplexRecord() returns error? {
 
     Contact[] nums = [phone1, phone2];
 
-    Student john = { name: "John Doe", age: (), img: byteArray, contacts: nums, address: address };
+    Student john = { name: "John Doe", age: 21, img: byteArray, contacts: nums, address: address };
 
     Proto3SerDes ser = check new(Student);
     byte[] encoded = check ser.serialize(john);
@@ -295,7 +290,7 @@ public function testComplexRecord() returns error? {
 
 type Member record {
     string name;
-    decimal? salary;
+    decimal salary;
     Contact contact?;
 };
 
@@ -305,7 +300,6 @@ public function testNilableRecord() returns error? {
     Contact phone1 = {mobile: "+123456", home: "789"};
 
     Member member1 = {name: "foo", salary: 1.23, contact: phone1};
-    Member member2 = {name: "bar", salary:(), contact: phone1};
 
     Proto3SerDes ser = check new(Member);
     byte[] encoded = check ser.serialize(member1);
@@ -314,26 +308,4 @@ public function testNilableRecord() returns error? {
     Member decoded = <Member>check des.deserialize(encoded);
 
     test:assertEquals(decoded, member1);
-}
-
-type NilMember record {
-    decimal? salary;
-};
-
-type DorN decimal?;
-
-@test:Config{}
-public function testNil() returns error? {
-
-    //Member member1 = {name: "foo", salary: 1.23, contact: phone1};
-    NilMember member2 = {salary:()};
-
-    Proto3SerDes ser = check new(DorN);
-    byte[] encoded = check ser.serialize(());
-
-    Proto3SerDes des = check new(DorN);
-    DorN decoded = <DorN>check des.deserialize(encoded);
-
-    //io:println(decoded);
-    test:assertEquals(decoded, ());
 }
