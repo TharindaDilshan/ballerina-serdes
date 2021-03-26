@@ -42,7 +42,7 @@ type Person record {
 
 type Student record {
    string name;
-   int? age;
+   int age;
    byte[] img;
    Contact[] contacts;
    Address address;
@@ -73,7 +73,7 @@ type BoolArray boolean[];
 type RecordArray Contact[];
 
 @test:Config{}
-public function testPrimitiveFloat() returns error? {
+public isolated function testPrimitiveFloat() returns error? {
     Proto3SerDes ser = check new(float);
     byte[] encoded = check ser.serialize(6.666);
 
@@ -83,7 +83,7 @@ public function testPrimitiveFloat() returns error? {
 }
 
 @test:Config{}
-public function testPrimitiveDecimal() returns error? {
+public isolated function testPrimitiveDecimal() returns error? {
     Proto3SerDes ser = check new(decimal);
     byte[] encoded = check ser.serialize(1.23);
 
@@ -93,7 +93,7 @@ public function testPrimitiveDecimal() returns error? {
 }
 
 @test:Config{}
-public function testPrimitiveBoolean() returns error? {
+public isolated function testPrimitiveBoolean() returns error? {
     Proto3SerDes ser = check new(boolean);
     byte[] encoded = check ser.serialize(true);
 
@@ -103,7 +103,7 @@ public function testPrimitiveBoolean() returns error? {
 }
 
 @test:Config{}
-public function testPrimitiveString() returns error? {
+public isolated function testPrimitiveString() returns error? {
     Proto3SerDes ser = check new(string);
     byte[] encoded = check ser.serialize("module-ballerina-serdes");
 
@@ -113,7 +113,7 @@ public function testPrimitiveString() returns error? {
 }
 
 @test:Config{}
-public function testPrimitiveInt() returns error? {
+public isolated function testPrimitiveInt() returns error? {
     Proto3SerDes ser = check new(int);
     byte[] encoded = check ser.serialize(666);
 
@@ -123,7 +123,7 @@ public function testPrimitiveInt() returns error? {
 }
 
 @test:Config{}
-public function testStringArray() returns error? {
+public isolated function testStringArray() returns error? {
     Proto3SerDes ser = check new(StringArray);
     byte[] encoded = check ser.serialize(["Jane", "Doe"]);
 
@@ -133,7 +133,7 @@ public function testStringArray() returns error? {
 }
 
 @test:Config{}
-public function testIntArray() returns error? {
+public isolated function testIntArray() returns error? {
     Proto3SerDes ser = check new(IntArray);
     byte[] encoded = check ser.serialize([1, 2, 3]);
 
@@ -143,7 +143,7 @@ public function testIntArray() returns error? {
 }
 
 @test:Config{}
-public function testByteArray() returns error? {
+public isolated function testByteArray() returns error? {
     Proto3SerDes ser = check new(ByteArray);
     byte[] encoded = check ser.serialize(base16 `aeeecdefabcd12345567888822`);
 
@@ -153,7 +153,7 @@ public function testByteArray() returns error? {
 }
 
 @test:Config{}
-public function testFloatArray() returns error? {
+public isolated function testFloatArray() returns error? {
     Proto3SerDes ser = check new(FloatArray);
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
@@ -163,7 +163,7 @@ public function testFloatArray() returns error? {
 }
 
 @test:Config{}
-public function testDecimalArray() returns error? {
+public isolated function testDecimalArray() returns error? {
     Proto3SerDes ser = check new(DecimalArray);
     byte[] encoded = check ser.serialize([0.123, 4.968, 3.256]);
 
@@ -173,7 +173,7 @@ public function testDecimalArray() returns error? {
 }
 
 @test:Config{}
-public function testBooleanArray() returns error? {
+public isolated function testBooleanArray() returns error? {
     Proto3SerDes ser = check new(BoolArray);
     byte[] encoded = check ser.serialize([true, false, true, false]);
 
@@ -186,7 +186,7 @@ type InnerArray int[];
 type OuterArray InnerArray[];
 
 @test:Config{}
-public function testNestedArray() returns error? {
+public isolated function testNestedArray() returns error? {
 
     InnerArray i1 = [1, 2, 3];
     InnerArray i2 = [4, 5, 6];
@@ -202,7 +202,7 @@ public function testNestedArray() returns error? {
 }
 
 @test:Config{}
-public function testRecordWithPrimitives() returns error? {
+public isolated function testRecordWithPrimitives() returns error? {
 
     Primitive primitiveRecord = { stringValue: "serdes", intValue: 192, floatValue: 192.168, boolValue: false };
 
@@ -215,7 +215,7 @@ public function testRecordWithPrimitives() returns error? {
 }
 
 @test:Config{}
-public function testRecordWithArrays() returns error? {
+public isolated function testRecordWithArrays() returns error? {
 
     Arrays arrayRecord = {
         stringArray: ["Jane", "Doe"],
@@ -234,7 +234,7 @@ public function testRecordWithArrays() returns error? {
 }
 
 @test:Config{}
-public function testNestedRecord() returns error? {
+public isolated function testNestedRecord() returns error? {
     byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
     Contact phone = {mobile: "+94111111111", home: "+94777777777"};
 
@@ -250,7 +250,7 @@ public function testNestedRecord() returns error? {
 }
 
 @test:Config{}
-public function testArrayOfRecords() returns error? {
+public isolated function testArrayOfRecords() returns error? {
     Contact phone1 = {mobile: "+123456", home: "789"};
     Contact phone2 = {mobile: "+456789", home: "123"};
 
@@ -265,7 +265,7 @@ public function testArrayOfRecords() returns error? {
 }
 
 @test:Config{}
-public function testComplexRecord() returns error? {
+public isolated function testComplexRecord() returns error? {
     byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
 
     Contact phone1 = {mobile: "+123456", home: "789"};
@@ -290,22 +290,259 @@ public function testComplexRecord() returns error? {
 
 type Member record {
     string name;
-    decimal salary;
+    decimal? salary;
     Contact contact?;
 };
 
 @test:Config{}
-public function testNilableRecord() returns error? {
+public isolated function testNilableRecord() returns error? {
 
     Contact phone1 = {mobile: "+123456", home: "789"};
 
     Member member1 = {name: "foo", salary: 1.23, contact: phone1};
+    Member member2 = {name: "bar", salary:()};
 
     Proto3SerDes ser = check new(Member);
-    byte[] encoded = check ser.serialize(member1);
+    byte[] encoded = check ser.serialize(member2);
 
     Proto3SerDes des = check new(Member);
     Member decoded = <Member>check des.deserialize(encoded);
 
-    test:assertEquals(decoded, member1);
+    test:assertEquals(decoded, member2);
+}
+
+type DecimalOrNil decimal?;
+
+@test:Config{}
+public isolated function testNil() returns error? {
+
+    Proto3SerDes ser = check new(DecimalOrNil);
+    byte[] encoded = check ser.serialize(());
+
+    Proto3SerDes des = check new(DecimalOrNil);
+    DecimalOrNil decoded = <DecimalOrNil>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, ());
+}
+
+type Union int|string|boolean|();
+
+@test:Config{}
+public isolated function testUnionType() returns error? {
+    Proto3SerDes ser = check new(Union);
+    byte[] encoded = check ser.serialize(128);
+
+    Proto3SerDes des = check new(Union);
+    Union decoded = <Union>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, 128);
+}
+
+type UnionWithArrays int[]|string[]|boolean;
+
+@test:Config{}
+public isolated function testUnionWithArrays() returns error? {
+    int[] nums = [1, 9, 2, 1, 6, 8];
+
+    Proto3SerDes ser = check new(UnionWithArrays);
+    byte[] encoded = check ser.serialize(nums);
+
+    Proto3SerDes des = check new(UnionWithArrays);
+    UnionWithArrays decoded = <UnionWithArrays>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, nums);
+}
+
+type UnionMember record {
+    string name;
+    int id;
+};
+
+type UnionWithRecord int|string[]|UnionMember|();
+
+@test:Config{}
+public isolated function testUnionWithRecord() returns error? {
+    UnionMember member = { name: "Jane", id:100 };
+
+    Proto3SerDes ser = check new(UnionWithRecord);
+    byte[] encoded = check ser.serialize(member);
+
+    Proto3SerDes des = check new(UnionWithRecord);
+    UnionWithRecord decoded = <UnionWithRecord>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, member);
+}
+
+type UnionElement int|string[]|UnionMember|();
+type UnionArray UnionElement[];
+
+@test:Config{}
+public isolated function testArrayOfUnionElements() returns error? {
+    UnionMember member = { name: "Jane", id:100 };
+    UnionElement[] array = [1, 2, ["John", "Doe"], member];
+
+    Proto3SerDes ser = check new(UnionArray);
+    byte[] encoded = check ser.serialize(array);
+
+    Proto3SerDes des = check new(UnionArray);
+    UnionArray decoded = <UnionArray>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, array);
+}
+
+type RecordWithUnionFields record {
+    string name;
+    UnionElement membership;
+};
+
+@test:Config{}
+public isolated function testRecordWithUnionFields() returns error? {
+    UnionMember member = { name: "Jane Doe", id:100 };
+    RecordWithUnionFields rec = { name: "Jane", membership: () };
+
+    Proto3SerDes ser = check new(RecordWithUnionFields);
+    byte[] encoded = check ser.serialize(rec);
+
+    Proto3SerDes des = check new(RecordWithUnionFields);
+    RecordWithUnionFields decoded = <RecordWithUnionFields>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, rec);
+}
+
+type UnionType int|string[]|TestMember[]|TestMember;
+type Level3Array UnionType[];
+type Level2Array Level3Array[];
+type Level1Array Level2Array[];
+
+@test:Config{}
+public isolated function testNestedArrayWithUnionFields() returns error? {
+    TestMember member1 = {full_name: "foo", id: 100};
+
+    UnionType[] uType = [1, 2, ["tharinda", "dilshan"], member1];
+    UnionType[] uType2 = [4, 5];
+
+    Level3Array[] level3Array = [uType, uType2];
+
+    Level2Array[] level2Array = [level3Array];
+
+    Proto3SerDes ser = check new(Level1Array);
+    byte[] encoded = check ser.serialize(level2Array);
+
+    Proto3SerDes des = check new(Level1Array);
+    Level1Array decoded = <Level1Array>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, level2Array);
+}
+
+type newUnion int|string|();
+type newUnionArr newUnion[];
+type newUnionRecord record {
+    int id;
+    newUnion number;
+};
+
+type RecordWithUnion record {
+    UnionType member_id;
+};
+
+type MyRecord record {
+    string name;
+    UnionType test_type;
+    RecordWithUnion member;
+};
+
+type TestMember record {
+    string full_name;
+    int id;
+};
+
+@test:Config{}
+public isolated function testComplexUnion() returns error? {
+
+    int[] nums = [1, 2, 3];
+    TestMember[] member1 = [{full_name: "foo", id: 100}];
+    UnionType[] uArray = [1, 2, ["tharinda", "dilshan"], member1];
+
+    TestMember member = {full_name: "Tharinda", id: 101};
+
+    RecordWithUnion membership = {member_id: 619};
+
+    MyRecord randomRecord = {name: "Tharinda", test_type: member1, member: membership};
+
+    newUnionArr newArr = [1, 2, (), "john"];
+    newUnionRecord test = { id:666, number:() };
+
+    Proto3SerDes ser = check new(MyRecord);
+    byte[] encoded = check ser.serialize(randomRecord);
+
+    Proto3SerDes des = check new(MyRecord);
+    MyRecord decoded = <MyRecord>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, randomRecord);
+}
+
+@test:Config{}
+public isolated function testByteArrayForNull() returns error? {
+    newUnion nullType = ();
+
+    Proto3SerDes ser = check new(newUnion);
+    byte[] encoded = check ser.serialize(nullType);
+
+    Proto3SerDes des = check new(newUnion);
+    newUnion decoded = <newUnion>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, nullType);
+}
+
+type Employer record {
+    string name;
+    int id;
+    byte[] img;
+};
+
+type Employee record {
+    string name;
+    int id;
+    byte[] img;
+    string department;
+};
+
+type Individual Employer|Employee;
+
+@test:Config{}
+public isolated function randomTest() returns error? {
+    byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
+    Employer employer = {name: "John Doe", id: 101, img: byteArray};
+
+    Proto3SerDes ser = check new(Individual);
+    byte[] encoded = check ser.serialize(employer);
+
+    Proto3SerDes des = check new(Individual);
+    Individual decoded = <Individual>check des.deserialize(encoded);
+
+    test:assertEquals(decoded, employer);
+}
+
+type Cont record {
+    string mobile;
+};
+
+type President record {
+    string name;
+    Cont contact;
+};
+
+@test:Config{}
+public isolated function myTest() returns error? {
+    President p = {name: "tharinda", contact: {mobile: "123456"}};
+
+    Proto3SerDes ser = check new(President);
+    byte[] encoded = check ser.serialize(p);
+
+    Proto3SerDes des = check new(President);
+    President decoded = <President>check des.deserialize(encoded);
+
+    //string file = "bytes.bin";
+    //check io:fileWriteBytes(file, encoded);
+    test:assertEquals(decoded, p);
 }

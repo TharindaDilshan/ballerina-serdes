@@ -37,8 +37,6 @@ import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
 
 /**
  * Deserializer class to generate an object from a byte array.
- *
- * @return Object
  */
 public class Deserializer {
 
@@ -49,11 +47,17 @@ public class Deserializer {
     static final String DYNAMIC_MESSAGE = "DynamicMessage";
 
     static final String ATOMIC_FIELD_NAME = "atomicField";
-    static final String ARRAY_FIELD_NAME = "arrayField";
+    static final String ARRAY_FIELD_NAME = "arrayfield";
+    static final String NULL_FIELD_NAME = "nullField";
 
     static final String SCHEMA_NAME = "schema";
 
+    static final String UNION_FIELD_NAME = "unionelement";
+    static final String UNION_TYPE_IDENTIFIER = "ballerinauniontype";
+    static final String UNION_FIELD_SEPARATOR = "__";
+
     static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
+    static final String DESERIALIZATION_ERROR_MESSAGE = "Failed to Deserialize data: ";
 
     /**
      * Creates an anydata object from a byte array after deserializing.
@@ -74,8 +78,8 @@ public class Deserializer {
             object = dynamicMessageToBallerinaType(dynamicMessage, dataType, schema);
         } catch (BError e) {
             return e;
-        } catch (Exception e) {
-            return createSerdesError("Failed to Deserialize data: " + e.getMessage(), SERDES_ERROR);
+        } catch (InvalidProtocolBufferException e) {
+            return createSerdesError(DESERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
         }
 
         return object;
@@ -87,59 +91,50 @@ public class Deserializer {
 
     private static Object dynamicMessageToBallerinaType(DynamicMessage dynamicMessage, BTypedesc typedesc,
                                                         Descriptor schema) {
-        Type type = null;
-
-        if (typedesc.getDescribingType().getTag() == TypeTags.UNION_TAG) {
-            type = getTypeFromUnion(typedesc.getDescribingType());
-        } else {
-            type = typedesc.getDescribingType();
-        }
+        Type type = typedesc.getDescribingType();
 
         if (type.getTag() <= TypeTags.BOOLEAN_TAG) {
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
 
             return primitiveToBallerina(dynamicMessage.getField(fieldDescriptor));
+        } else if (type.getTag() == TypeTags.UNION_TAG) {
+            FieldDescriptor fieldDescriptor = schema.findFieldByName(ATOMIC_FIELD_NAME);
+            DynamicMessage dynamicMessageForUnion = (DynamicMessage) dynamicMessage.getField(fieldDescriptor);
+
+            return resolveUnionType(dynamicMessageForUnion, typedesc.getDescribingType(), schema);
         } else if (type.getTag() == TypeTags.ARRAY_TAG) {
             ArrayType arrayType = (ArrayType) type;
             Type elementType = arrayType.getElementType();
+
             FieldDescriptor fieldDescriptor = schema.findFieldByName(ARRAY_FIELD_NAME);
             schema = fieldDescriptor.getContainingType();
 
-            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema);
-        } else {
+            return arrayToBallerina(dynamicMessage.getField(fieldDescriptor), elementType, schema, 1);
+        } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
+        } else {
+            throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
     }
 
     private static Object primitiveToBallerina(Object value) {
         String valueInString = value.toString();
 
-        if (value.getClass().getSimpleName().equals(STRING)) {
-            if (valueInString.equals("")) {
-                return null;
-            }
-
-            return StringUtils.fromString(valueInString);
-        } else if(value.getClass().getSimpleName().equals(FLOAT)) {
-            if (Double.valueOf(valueInString) == 0.0) {
-                return null;
-            }
-
-            return Double.valueOf(valueInString);
-        } else if(value.getClass().getSimpleName().equals(DOUBLE)) {
-            if (Double.valueOf(valueInString) == 0.0) {
-                return null;
-            }
-
-            return ValueCreator.createDecimalValue(valueInString);
-        } else {
-            return value;
+        switch (value.getClass().getSimpleName()) {
+            case STRING:
+                return StringUtils.fromString(valueInString);
+            case FLOAT:
+                return (Double)value;
+            case DOUBLE:
+                return ValueCreator.createDecimalValue(valueInString);
+            default:
+                return value;
         }
     }
 
-    private static Object arrayToBallerina(Object value, Type type, Descriptor schema) {
+    private static Object arrayToBallerina(Object value, Type type, Descriptor schema, int unionFieldIdentifier) {
         if (value.getClass().getSimpleName().equals(BYTE)) {
             ByteString byteString = (ByteString) value;
 
@@ -159,14 +154,29 @@ public class Deserializer {
                 } else if (type.getTag() == TypeTags.ARRAY_TAG) {
                     ArrayType arrayType = (ArrayType) type;
                     Type elementType = arrayType.getElementType();
+                    String fieldName;
+                    if (elementType.getTag() == TypeTags.UNION_TAG) {
+                        fieldName = UNION_FIELD_NAME + unionFieldIdentifier;
+//                        unionFieldIdentifier++;
+                    } else if (elementType.getTag() == TypeTags.ARRAY_TAG) {
+                        fieldName = UNION_FIELD_NAME + unionFieldIdentifier;
+                        unionFieldIdentifier++;
+                    } else {
+                        fieldName = elementType.getName();
+                    }
 
-                    Descriptor nestedSchema = schema.findNestedTypeByName(elementType.getName().toUpperCase(Locale.ROOT));
+                    Descriptor nestedSchema = schema.findNestedTypeByName(fieldName);
                     DynamicMessage nestedDynamicMessage = (DynamicMessage) element;
-                    FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(elementType.getName());
+                    FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(fieldName);
 
                     BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
-                                                                   elementType, schema);
+                                                                   elementType, nestedSchema, unionFieldIdentifier);
+
                     bArray.append(nestedArray);
+                } else if (type.getTag() == TypeTags.UNION_TAG) {
+                    DynamicMessage dynamicMessageForUnion = (DynamicMessage) element;
+
+                    bArray.append(resolveUnionType(dynamicMessageForUnion, type, schema));
                 } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
                     Map<String, Object> mapObject = recordToBallerina((DynamicMessage) element, type, schema);
 
@@ -184,38 +194,62 @@ public class Deserializer {
         Map<String, Object> map = new HashMap();
 
         for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
+            String fieldName = entry.getKey().getName();
             Object value = entry.getValue();
 
             if (value instanceof DynamicMessage) {
-                DynamicMessage msg = (DynamicMessage) entry.getValue();
+                DynamicMessage nestedDynamicMessage = (DynamicMessage) value;
 
-                Map<String, Object> nestedMap = recordToBallerina(msg, type, schema);
-                String recordTypeName = getRecordTypeName(type, entry.getKey().getName());
+                String fieldType = nestedDynamicMessage.getDescriptorForType().getName();
 
-                BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
-                                        type.getPackage(),
-                                        recordTypeName,
-                                        nestedMap
-                );
+                String[] processFieldName = fieldType.split("_");
+                String unionCheck = processFieldName[processFieldName.length - 1];
 
-                map.put(entry.getKey().getName(), nestedRecord);
+                if (unionCheck.contains(UNION_TYPE_IDENTIFIER)) {
+                    Descriptor unionSchema = schema.findNestedTypeByName(fieldType);
 
+                    Type unionType = null;
+                    RecordType recordType = (RecordType) type;
+
+                    for (Map.Entry<String, Field> member: recordType.getFields().entrySet()) {
+                        if (member.getKey().equals(fieldName)) {
+                            unionType = member.getValue().getFieldType();
+                            break;
+                        }
+                    }
+
+                    map.put(fieldName, resolveUnionType(nestedDynamicMessage, unionType, unionSchema));
+
+                } else {
+                    Map<String, Object> nestedMap = recordToBallerina(nestedDynamicMessage, type, schema);
+                    String recordTypeName = getRecordTypeName(type, fieldName);
+
+                    BMap<BString, Object> nestedRecord = ValueCreator.createRecordValue(
+                            type.getPackage(),
+                            recordTypeName,
+                            nestedMap
+                    );
+
+                    map.put(fieldName, nestedRecord);
+                }
             } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
                 if (!value.getClass().getSimpleName().equals(BYTE)) {
-                    Type elementType = getArrayElementType(type, entry.getKey().getName());
-                    Object handleArray = arrayToBallerina(entry.getValue(), elementType, schema);
+                    Type elementType = getArrayElementType(type, fieldName);
+                    Object handleArray = arrayToBallerina(value, elementType, schema, 1);
 
-                    map.put(entry.getKey().getName(), handleArray);
+                    map.put(fieldName, handleArray);
                 } else {
-                    Object handleArray = arrayToBallerina(entry.getValue(), type, schema);
+                    Object handleArray = arrayToBallerina(value, type, schema, 1);
 
-                    map.put(entry.getKey().getName(), handleArray);
+                    map.put(fieldName, handleArray);
                 }
 
-            } else {
-                Object handlePrimitive = primitiveToBallerina(entry.getValue());
+            } else if (DataTypeMapper.getProtoTypeFromJavaType(value.getClass().getSimpleName()) != null) {
+                Object handlePrimitive = primitiveToBallerina(value);
 
-                map.put(entry.getKey().getName(), handlePrimitive);
+                map.put(fieldName, handlePrimitive);
+            } else {
+                throw createSerdesError(UNSUPPORTED_DATA_TYPE + value.getClass().getSimpleName(), SERDES_ERROR);
             }
         }
 
@@ -227,21 +261,6 @@ public class Deserializer {
 
         for (Map.Entry<String, Field> entry: recordType.getFields().entrySet()) {
             Type fieldType = entry.getValue().getFieldType();
-
-            if (fieldType.getTag() == TypeTags.UNION_TAG) {
-                UnionType unionType = (UnionType) fieldType;
-
-                if (unionType.getMemberTypes().size() == 2) {
-                    for (Type elementType : unionType.getMemberTypes()) {
-                        if (elementType.getTag() != TypeTags.NULL_TAG) {
-                            fieldType = elementType;
-                            continue;
-                        }
-                    }
-                } else {
-                    throw createSerdesError("Unsupported data type: " + fieldType.getName(), SERDES_ERROR);
-                }
-            }
 
             if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG && entry.getKey().equals(fieldName)) {
                 return fieldType.getName();
@@ -265,27 +284,66 @@ public class Deserializer {
                 return arrayType.getElementType();
             } else if (entry.getValue().getFieldType().getTag() == TypeTags.RECORD_TYPE_TAG) {
                 return getArrayElementType(entry.getValue().getFieldType(), fieldName);
-            } else {
-                continue;
             }
         }
 
         return null;
     }
 
-    private static Type getTypeFromUnion(Type type) {
-        UnionType unionType = (UnionType) type;
+    private static Object resolveUnionType(DynamicMessage dynamicMessage, Type type, Descriptor schema) {
+        for (Map.Entry<FieldDescriptor, Object> entry : dynamicMessage.getAllFields().entrySet()) {
+            Object value = entry.getValue();
 
-        if (unionType.getMemberTypes().size() == 2) {
-            for (Type member : unionType.getMemberTypes()) {
-                if (member.getTag() != TypeTags.NULL_TAG) {
-                    return member;
-                }
+            if (entry.getKey().getName().equals(NULL_FIELD_NAME) && (Boolean) value) {
+                return null;
             }
-        } else {
-            throw createSerdesError(UNSUPPORTED_DATA_TYPE + unionType.getMemberTypes(), SERDES_ERROR);
+
+            if (value instanceof DynamicMessage) {
+                DynamicMessage dynamicMessageForUnion = (DynamicMessage) entry.getValue();
+                Type recordType = getElementTypeFromUnion(type, entry.getKey().getName());
+
+                Map<String, Object> mapObject = recordToBallerina(dynamicMessageForUnion, recordType, schema);
+
+                return ValueCreator.createRecordValue(recordType.getPackage(), recordType.getName(), mapObject);
+            } else if (value.getClass().getSimpleName().equals(BYTE) || entry.getKey().isRepeated()) {
+                Type elementType = getElementTypeFromUnion(type, entry.getKey().getName());
+
+                return arrayToBallerina(value, elementType, schema, 1);
+            } else {
+                return primitiveToBallerina(entry.getValue());
+            }
         }
 
-        return type;
+        return null;
+    }
+
+    private static Type getElementTypeFromUnion(Type type, String fieldName) {
+        UnionType unionType = (UnionType) type;
+        String typeFromFieldName = fieldName.split(UNION_FIELD_SEPARATOR)[0];
+
+        for (Type memberType : unionType.getMemberTypes()) {
+            if (memberType.getTag() == TypeTags.ARRAY_TAG) {
+                ArrayType arrayType = (ArrayType) memberType;
+
+                String elementType;
+                if (DataTypeMapper.getProtoTypeFromTag(arrayType.getElementType().getTag()) != null) {
+                    elementType = DataTypeMapper.getProtoTypeFromTag(arrayType.getElementType().getTag());
+                } else {
+                    elementType = arrayType.getElementType().getName();
+                }
+
+                if (typeFromFieldName.equals(elementType)) {
+                    return arrayType.getElementType();
+                }
+            } else if (memberType.getTag() == TypeTags.RECORD_TYPE_TAG) {
+                RecordType recordType = (RecordType) memberType;
+
+                if (recordType.getName().equals(typeFromFieldName)) {
+                    return recordType;
+                }
+            }
+        }
+
+        return null;
     }
 }
