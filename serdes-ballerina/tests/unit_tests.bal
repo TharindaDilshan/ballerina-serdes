@@ -63,8 +63,6 @@ type Arrays record {
     byte[] byteArray;
 };
 
-type JSON json;
-
 type StringArray string[];
 type IntArray int[];
 type ByteArray byte[];
@@ -73,9 +71,6 @@ type DecimalArray float[];
 type BoolArray boolean[];
 
 type RecordArray Contact[];
-type CustomerTable table<map<any>>;
-
-type myanydata ()|boolean|int|float|decimal|string|map<myanydata>|myanydata[];
 
 @test:Config{}
 public isolated function testPrimitiveFloat() returns error? {
@@ -295,7 +290,7 @@ public isolated function testComplexRecord() returns error? {
 
 type Member record {
     string name;
-    decimal? salary;
+    decimal salary;
     Contact contact?;
 };
 
