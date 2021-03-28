@@ -295,7 +295,7 @@ type Member record {
 };
 
 @test:Config{}
-public isolated function testNilableRecord() returns error? {
+public isolated function testRecordWithNil() returns error? {
 
     Contact phone1 = {mobile: "+123456", home: "789"};
 
@@ -314,7 +314,7 @@ public isolated function testNilableRecord() returns error? {
 type DecimalOrNil decimal?;
 
 @test:Config{}
-public isolated function testNil() returns error? {
+public isolated function testFieldWithNil() returns error? {
 
     Proto3SerDes ser = check new(DecimalOrNil);
     byte[] encoded = check ser.serialize(());
@@ -328,7 +328,7 @@ public isolated function testNil() returns error? {
 type Union int|string|boolean|();
 
 @test:Config{}
-public isolated function testUnionType() returns error? {
+public isolated function testUnionField() returns error? {
     Proto3SerDes ser = check new(Union);
     byte[] encoded = check ser.serialize(128);
 
@@ -416,9 +416,9 @@ type Level1Array Level2Array[];
 
 @test:Config{}
 public isolated function testNestedArrayWithUnionFields() returns error? {
-    TestMember member1 = {full_name: "foo", id: 100};
+    TestMember member1 = {full_name: "foo bar", id: 100};
 
-    UnionType[] uType = [1, 2, ["tharinda", "dilshan"], member1];
+    UnionType[] uType = [1, 2, ["John", "Doe"], member1];
     UnionType[] uType2 = [4, 5];
 
     Level3Array[] level3Array = [uType, uType2];
@@ -434,12 +434,7 @@ public isolated function testNestedArrayWithUnionFields() returns error? {
     test:assertEquals(decoded, level2Array);
 }
 
-type newUnion int|string|();
-type newUnionArr newUnion[];
-type newUnionRecord record {
-    int id;
-    newUnion number;
-};
+type IntStringOrNull int|string|();
 
 type RecordWithUnion record {
     UnionType member_id;
@@ -457,20 +452,17 @@ type TestMember record {
 };
 
 @test:Config{}
-public isolated function testComplexUnion() returns error? {
+public isolated function testComplexTypeWithUnion() returns error? {
 
     int[] nums = [1, 2, 3];
-    TestMember[] member1 = [{full_name: "foo", id: 100}];
-    UnionType[] uArray = [1, 2, ["tharinda", "dilshan"], member1];
+    TestMember[] member1 = [{full_name: "foo bar", id: 100}];
+    UnionType[] uArray = [1, 2, ["Jane", "Doe"], member1];
 
-    TestMember member = {full_name: "Tharinda", id: 101};
+    TestMember member = {full_name: "John Doe", id: 101};
 
     RecordWithUnion membership = {member_id: 619};
 
-    MyRecord randomRecord = {name: "Tharinda", test_type: member1, member: membership};
-
-    newUnionArr newArr = [1, 2, (), "john"];
-    newUnionRecord test = { id:666, number:() };
+    MyRecord randomRecord = {name: "John", test_type: member1, member: membership};
 
     Proto3SerDes ser = check new(MyRecord);
     byte[] encoded = check ser.serialize(randomRecord);
@@ -482,14 +474,14 @@ public isolated function testComplexUnion() returns error? {
 }
 
 @test:Config{}
-public isolated function testByteArrayForNull() returns error? {
-    newUnion nullType = ();
+public isolated function testUnionTypeWithNull() returns error? {
+    IntStringOrNull nullType = ();
 
-    Proto3SerDes ser = check new(newUnion);
+    Proto3SerDes ser = check new(IntStringOrNull);
     byte[] encoded = check ser.serialize(nullType);
 
-    Proto3SerDes des = check new(newUnion);
-    newUnion decoded = <newUnion>check des.deserialize(encoded);
+    Proto3SerDes des = check new(IntStringOrNull);
+    IntStringOrNull decoded = <IntStringOrNull>check des.deserialize(encoded);
 
     test:assertEquals(decoded, nullType);
 }
@@ -510,7 +502,7 @@ type Employee record {
 type Individual Employer|Employee;
 
 @test:Config{}
-public isolated function randomTest() returns error? {
+public isolated function testUseCase1() returns error? {
     byte[] byteArray = base16 `aeeecdefabcd12345567888822`;
     Employer employer = {name: "John Doe", id: 101, img: byteArray};
 
