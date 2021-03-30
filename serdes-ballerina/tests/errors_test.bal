@@ -15,7 +15,7 @@
 // under the License.
 
 import ballerina/test;
-import ballerina/io;
+//import ballerina/io;
 
 type EmployeeTable table<map<any>>;
 

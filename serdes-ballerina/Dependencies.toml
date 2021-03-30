@@ -1,4 +1,4 @@
 [[dependency]]
 org="ballerina"
 name="io"
-version="@stdlib.io.version@"
+version="0.6.0-alpha6"
