@@ -57,6 +57,7 @@ public class Serializer {
 
     static final String UNSUPPORTED_DATA_TYPE = "Unsupported data type: ";
     static final String SERIALIZATION_ERROR_MESSAGE = "Failed to Serialize data: ";
+    static final String TYPE_MISMATCH_ERROR_MESSAGE = "Type mismatch";
 
     /**
      * Creates a BArray for given data after serializing.
@@ -73,8 +74,8 @@ public class Serializer {
             dynamicMessage = generateDynamicMessage(message, schema, dataType);
         } catch (BError e) {
             return e;
-        } catch (Exception e) {
-            return createSerdesError(SERIALIZATION_ERROR_MESSAGE + e.getMessage(), SERDES_ERROR);
+        } catch (IllegalArgumentException e) {
+            return createSerdesError(SERIALIZATION_ERROR_MESSAGE + TYPE_MISMATCH_ERROR_MESSAGE, SERDES_ERROR);
         }
 
         return ValueCreator.createArrayValue(dynamicMessage.toByteArray());

@@ -27,7 +27,7 @@ import com.google.protobuf.DescriptorProtos;
 public class ProtobufMessageBuilder {
     // Describes a message type
     private DescriptorProtos.DescriptorProto.Builder messageBuilder;
-    private int oneofFieldIndex = 0;
+    // private int oneofFieldIndex = 0;
 
     // Constructor with message name as parameter
     ProtobufMessageBuilder(String messageName) {
@@ -41,23 +41,27 @@ public class ProtobufMessageBuilder {
         addField(fieldLabel, type, name, number, null, null);
         return this;
     }
-
-    // Add message field with default value
+//  Add message field with default value - not used
+/*
     public ProtobufMessageBuilder addField(String label, String type, String name, int number, String defaultValue) {
         DescriptorProtos.FieldDescriptorProto.Label fieldLabel = ProtobufMessageField.getFieldLabel(label);
         addField(fieldLabel, type, name, number, defaultValue, null);
         return this;
     }
+*/
 
     public ProtobufMessageBuilder addNestedMessage(ProtobufMessage nestedMessage) {
         messageBuilder.addNestedType(nestedMessage.getProtobufMessage());
         return this;
     }
 
+//  Add oneOfField - not used
+/*
     public OneofFieldBuilder addOneofField(String oneofFieldName) {
         messageBuilder.addOneofDecl(DescriptorProtos.OneofDescriptorProto.newBuilder().setName(oneofFieldName).build());
         return new OneofFieldBuilder(this, oneofFieldIndex++);
     }
+*/
 
     public ProtobufMessage build() {
 
@@ -84,6 +88,8 @@ public class ProtobufMessageBuilder {
             messageFieldBuilder.setTypeName(type);
         }
 
+        // Not used
+/*
         if (defaultValue != null) {
             messageFieldBuilder.setDefaultValue(defaultValue);
         }
@@ -91,6 +97,7 @@ public class ProtobufMessageBuilder {
         if (oneofFieldBuilder != null) {
             messageFieldBuilder.setOneofIndex(oneofFieldBuilder.getMessageIndex());
         }
+*/
 
         messageBuilder.addField(messageFieldBuilder.build());
     }

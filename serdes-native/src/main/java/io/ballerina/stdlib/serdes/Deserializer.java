@@ -125,8 +125,6 @@ public class Deserializer {
         switch (value.getClass().getSimpleName()) {
             case STRING:
                 return StringUtils.fromString(valueInString);
-            case FLOAT:
-                return (Double)value;
             case DOUBLE:
                 return ValueCreator.createDecimalValue(valueInString);
             default:
