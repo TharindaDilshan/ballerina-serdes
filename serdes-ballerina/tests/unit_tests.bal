@@ -525,7 +525,7 @@ type President record {
 };
 
 @test:Config{}
-public isolated function myTest() returns error? {
+public isolated function simpleTest() returns error? {
     President p = {name: "tharinda", contact: {mobile: "123456"}};
 
     Proto3SerDes ser = check new(President);
@@ -537,4 +537,23 @@ public isolated function myTest() returns error? {
     //string file = "bytes.bin";
     //check io:fileWriteBytes(file, encoded);
     test:assertEquals(decoded, p);
+}
+
+type Employee record {
+    readonly int id;
+    string name;
+    float salary;
+};
+
+type EmployeeTable table<Employee> key(id);
+
+@test:Config{}
+public isolated function testTable() returns error? {
+    Proto3SerDes ser = check new(EmployeeTable);
+    //byte[] encoded = check ser.serialize(p);
+    //
+    //Proto3SerDes des = check new(President);
+    //President decoded = <President>check des.deserialize(encoded);
+    //
+    //test:assertEquals(decoded, p);
 }

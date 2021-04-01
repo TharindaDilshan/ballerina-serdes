@@ -119,6 +119,15 @@ public class SchemaGenerator {
             RecordType recordType = (RecordType) type;
 
             return buildProtobufMessageForRecord(recordType.getFields(), type.getName());
+        } else if (type.getTag() == TypeTags.TABLE_TAG) {
+            TableType tableType = (TableType) type;
+            ProtobufMessage protobufMessage = buildProtobufMessageForTable(type);
+            ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("TableBuilder");
+
+            messageBuilder.addNestedMessage(protobufMessage);
+            messageBuilder.addField(OPTIONAL_LABEL, tableType.getConstrainedType().getName(), ATOMIC_FIELD_NAME, 1);
+
+            return messageBuilder.build();
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
@@ -273,5 +282,18 @@ public class SchemaGenerator {
         }
 
         return messageBuilder.build();
+    }
+
+    private static ProtobufMessage buildProtobufMessageForTable(Type type) {
+        TableType tableType = (TableType) type;
+
+        if (tableType.getConstrainedType().getTag() == TypeTags.RECORD_TYPE_TAG) {
+            RecordType recordType = (RecordType) tableType.getConstrainedType();
+            String recordTypeName = tableType.getConstrainedType().getName();
+
+            return buildProtobufMessageForRecord(recordType.getFields(), recordTypeName);
+        } else {
+            return null;
+        }
     }
 }
