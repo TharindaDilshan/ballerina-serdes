@@ -20,7 +20,11 @@ package io.ballerina.stdlib.serdes;
 
 import com.google.protobuf.Descriptors;
 import io.ballerina.runtime.api.TypeTags;
-import io.ballerina.runtime.api.types.*;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BTypedesc;
@@ -97,7 +101,7 @@ public class SchemaGenerator {
 
             return messageBuilder.build();
         } else if (type.getTag() == TypeTags.UNION_TAG) {
-            ProtobufMessage protobufMessage = buildProtobufMessageForUnion(typedesc.getDescribingType(), UNION_FIELD_NAME);
+            ProtobufMessage protobufMessage = buildProtobufMessageForUnion(type, UNION_FIELD_NAME);
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder(UNION_BUILDER_NAME);
 
             messageBuilder.addNestedMessage(protobufMessage);
@@ -155,7 +159,13 @@ public class SchemaGenerator {
             }
 
             ProtobufMessageBuilder nestedMessageBuilder = ProtobufMessage.newMessageBuilder(nestedMessageName);
-            buildProtobufMessageForArray(nestedMessageBuilder, nestedArrayType, nestedMessageName, 1, unionFieldIdentifier);
+            buildProtobufMessageForArray(
+                    nestedMessageBuilder,
+                    nestedArrayType,
+                    nestedMessageName,
+                    1,
+                    unionFieldIdentifier
+            );
 
             messageBuilder.addNestedMessage(nestedMessageBuilder.build());
             messageBuilder.addField(REPEATED_LABEL, nestedMessageName, name, number);
@@ -166,7 +176,9 @@ public class SchemaGenerator {
             String[] elementNameHolder = type.getName().split(":");
             String elementType = elementNameHolder[elementNameHolder.length - 1];
 
-            messageBuilder.addNestedMessage(buildProtobufMessageForRecord(recordType.getFields(), recordType.getName()));
+            messageBuilder.addNestedMessage(
+                    buildProtobufMessageForRecord(recordType.getFields(), recordType.getName())
+            );
             messageBuilder.addField(REPEATED_LABEL, elementType, name, number);
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
@@ -192,7 +204,10 @@ public class SchemaGenerator {
             } else if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 RecordType recordType = (RecordType) fieldType;
 
-                ProtobufMessage nestedMessage = buildProtobufMessageForRecord(recordType.getFields(), recordType.getName());
+                ProtobufMessage nestedMessage = buildProtobufMessageForRecord(
+                        recordType.getFields(),
+                        recordType.getName()
+                );
                 String nestedFieldType = recordType.getName();
 
                 messageBuilder.addNestedMessage(nestedMessage);

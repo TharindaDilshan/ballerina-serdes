@@ -42,6 +42,6 @@ public class Utils {
     }
 
     public static BError createSerdesError(String message, String typeId) {
-        return ErrorCreator.createDistinctError(typeId, getModule(), StringUtils.fromString(message));
+        return ErrorCreator.createError(getModule(), typeId, StringUtils.fromString(message), null, null);
     }
 }

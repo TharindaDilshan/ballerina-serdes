@@ -19,18 +19,30 @@
 package io.ballerina.stdlib.serdes;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.*;
+import io.ballerina.runtime.api.types.ArrayType;
+import io.ballerina.runtime.api.types.Field;
+import io.ballerina.runtime.api.types.RecordType;
+import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.UnionType;
 import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.values.*;
+import io.ballerina.runtime.api.values.BArray;
+import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BObject;
+import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import static io.ballerina.stdlib.serdes.Constants.SERDES_ERROR;
 import static io.ballerina.stdlib.serdes.Utils.createSerdesError;
@@ -85,7 +97,8 @@ public class Deserializer {
         return object;
     }
 
-    private static DynamicMessage generateDynamicMessageFromBytes(Descriptor schema, BArray encodedMessage) throws InvalidProtocolBufferException {
+    private static DynamicMessage generateDynamicMessageFromBytes(Descriptor schema, BArray encodedMessage)
+                                                                                throws InvalidProtocolBufferException {
         return DynamicMessage.parseFrom(schema, encodedMessage.getBytes());
     }
 

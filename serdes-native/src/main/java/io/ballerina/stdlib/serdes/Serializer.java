@@ -19,13 +19,17 @@
 package io.ballerina.stdlib.serdes;
 
 import com.google.protobuf.Descriptors.Descriptor;
-import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.values.*;
+import io.ballerina.runtime.api.values.BArray;
+import io.ballerina.runtime.api.values.BError;
+import io.ballerina.runtime.api.values.BMap;
+import io.ballerina.runtime.api.values.BObject;
+import io.ballerina.runtime.api.values.BString;
+import io.ballerina.runtime.api.values.BTypedesc;
 
 import java.util.Locale;
 import java.util.Map;
@@ -154,13 +158,13 @@ public class Serializer {
             return;
         }
 
-        for(long i = 0; i < len; i++) {
+        for (long i = 0; i < len; i++) {
             Object element = bArray.get(i);
 
             boolean isUnion;
             try {
                 isUnion = field.getMessageType().getName().toLowerCase(Locale.ROOT).contains(UNION_TYPE_IDENTIFIER);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 isUnion = false;
             }
 
@@ -200,7 +204,13 @@ public class Serializer {
                     Descriptor messageDescriptor = nestedMessage.getDescriptorForType();
                     FieldDescriptor fieldDescriptor = messageDescriptor.findFieldByName(nestedTypeName);
 
-                    generateDynamicMessageForArray(nestedMessage, nestedSchema, fieldDescriptor, element, unionFieldIdentifier);
+                    generateDynamicMessageForArray(
+                            nestedMessage,
+                            nestedSchema,
+                            fieldDescriptor,
+                            element,
+                            unionFieldIdentifier
+                    );
 
                     messageBuilder.addRepeatedField(field, nestedMessage.build());
                 } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
