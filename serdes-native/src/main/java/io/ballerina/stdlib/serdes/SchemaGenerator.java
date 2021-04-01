@@ -126,7 +126,7 @@ public class SchemaGenerator {
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("TableBuilder");
 
             messageBuilder.addNestedMessage(protobufMessage);
-            messageBuilder.addField(OPTIONAL_LABEL, tableType.getConstrainedType().getName(), ATOMIC_FIELD_NAME, 1);
+            messageBuilder.addField(REPEATED_LABEL, tableType.getConstrainedType().getName(), ATOMIC_FIELD_NAME, 1);
 
             return messageBuilder.build();
         } else {

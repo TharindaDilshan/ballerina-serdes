@@ -23,13 +23,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.TableType;
 import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.values.BArray;
-import io.ballerina.runtime.api.values.BError;
-import io.ballerina.runtime.api.values.BMap;
-import io.ballerina.runtime.api.values.BObject;
-import io.ballerina.runtime.api.values.BString;
-import io.ballerina.runtime.api.values.BTypedesc;
+import io.ballerina.runtime.api.values.*;
 
 import java.util.Locale;
 import java.util.Map;
@@ -119,6 +115,11 @@ public class Serializer {
             return  newMessageFromSchema.build();
         } else if (type.getTag() == TypeTags.RECORD_TYPE_TAG) {
             return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
+        } else if (type.getTag() == TypeTags.TABLE_TAG) {
+            TableType tableType = (TableType) type;
+            String fieldName = tableType.getConstrainedType().getName();
+
+            return generateDynamicMessageForTable(dataObject, schema, fieldName);
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
@@ -321,5 +322,16 @@ public class Serializer {
         }
 
         return  newMessageFromSchema.build();
+    }
+
+    private static DynamicMessage generateDynamicMessageForTable(Object value, Descriptor schema, String fieldName) {
+        DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
+        Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
+
+        Descriptor tableSchema = schema.findNestedTypeByName(fieldName);
+
+        BTable bTable = (BTable) value;
+        Object[] objectList = bTable.values().toArray();
+        return null;
     }
 }

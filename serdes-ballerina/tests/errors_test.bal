@@ -14,55 +14,54 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import ballerina/test;
-//import ballerina/io;
-
-type EmployeeTable table<map<any>>;
-
-@test:Config{}
-public isolated function testUnsupportedDataType() returns error? {
-    string expected = "Unsupported data type: table";
-
-    Proto3SerDes|error ser = new(EmployeeTable);
-
-    test:assertTrue(ser is Error);
-    Error err = <Error> ser;
-    test:assertEquals(err.message(), expected);
-}
-
-@test:Config{}
-public isolated function testTypeMismatch() returns error? {
-    string expected = "Failed to Serialize data: Type mismatch";
-
-    Proto3SerDes ser = check new(float);
-    byte[]|error encoded = ser.serialize(123);
-
-    test:assertTrue(encoded is Error);
-    Error err = <Error> encoded;
-    test:assertEquals(err.message(), expected);
-}
-
-type Chairman record {
-    string name;
-    string id;
-    string department;
-};
-
-type Engineer record {
-    string name;
-    int id;
-};
-
-@test:Config{}
-public isolated function testRecordTypeMismatch() returns error? {
-    string expected = "Failed to Serialize data: Type mismatch";
-
-    Engineer SE = {name: "Jane Doe", id: 123};
-
-    Proto3SerDes ser = check new(Chairman);
-    byte[]|error encoded = ser.serialize(SE);
-
-    test:assertTrue(encoded is Error);
-    Error err = <Error> encoded;
-    test:assertEquals(err.message(), expected);
-}
+//import ballerina/test;
+//
+//type EmployeeTable table<map<any>>;
+//
+//@test:Config{}
+//public isolated function testUnsupportedDataType() returns error? {
+//    string expected = "Unsupported data type: table";
+//
+//    Proto3SerDes|error ser = new(EmployeeTable);
+//
+//    test:assertTrue(ser is Error);
+//    Error err = <Error> ser;
+//    test:assertEquals(err.message(), expected);
+//}
+//
+//@test:Config{}
+//public isolated function testTypeMismatch() returns error? {
+//    string expected = "Failed to Serialize data: Type mismatch";
+//
+//    Proto3SerDes ser = check new(float);
+//    byte[]|error encoded = ser.serialize(123);
+//
+//    test:assertTrue(encoded is Error);
+//    Error err = <Error> encoded;
+//    test:assertEquals(err.message(), expected);
+//}
+//
+//type Chairman record {
+//    string name;
+//    string id;
+//    string department;
+//};
+//
+//type Engineer record {
+//    string name;
+//    int id;
+//};
+//
+//@test:Config{}
+//public isolated function testRecordTypeMismatch() returns error? {
+//    string expected = "Failed to Serialize data: Type mismatch";
+//
+//    Engineer SE = {name: "Jane Doe", id: 123};
+//
+//    Proto3SerDes ser = check new(Chairman);
+//    byte[]|error encoded = ser.serialize(SE);
+//
+//    test:assertTrue(encoded is Error);
+//    Error err = <Error> encoded;
+//    test:assertEquals(err.message(), expected);
+//}
