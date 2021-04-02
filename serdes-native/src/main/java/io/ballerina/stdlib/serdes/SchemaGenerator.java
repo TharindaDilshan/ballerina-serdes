@@ -122,7 +122,13 @@ public class SchemaGenerator {
             return buildProtobufMessageForRecord(recordType.getFields(), type.getName());
         } else if (type.getTag() == TypeTags.TABLE_TAG) {
             TableType tableType = (TableType) type;
-            ProtobufMessage protobufMessage = buildProtobufMessageForTable(type);
+
+            ProtobufMessage protobufMessage;
+            try {
+                protobufMessage = buildProtobufMessageForTable(type);
+            } catch (BError e) {
+                throw e;
+            }
             ProtobufMessageBuilder messageBuilder = ProtobufMessage.newMessageBuilder("TableBuilder");
 
             messageBuilder.addNestedMessage(protobufMessage);
@@ -294,7 +300,7 @@ public class SchemaGenerator {
 
             return buildProtobufMessageForRecord(recordType.getFields(), recordTypeName);
         } else {
-            return null;
+            throw createSerdesError(UNSUPPORTED_DATA_TYPE + "Member type required", SERDES_ERROR);
         }
     }
 }

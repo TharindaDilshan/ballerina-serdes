@@ -26,18 +26,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.ballerina.runtime.api.TypeTags;
 import io.ballerina.runtime.api.creators.TypeCreator;
 import io.ballerina.runtime.api.creators.ValueCreator;
-import io.ballerina.runtime.api.types.ArrayType;
-import io.ballerina.runtime.api.types.Field;
-import io.ballerina.runtime.api.types.RecordType;
-import io.ballerina.runtime.api.types.Type;
-import io.ballerina.runtime.api.types.UnionType;
+import io.ballerina.runtime.api.types.*;
 import io.ballerina.runtime.api.utils.StringUtils;
-import io.ballerina.runtime.api.values.BArray;
-import io.ballerina.runtime.api.values.BError;
-import io.ballerina.runtime.api.values.BMap;
-import io.ballerina.runtime.api.values.BObject;
-import io.ballerina.runtime.api.values.BString;
-import io.ballerina.runtime.api.values.BTypedesc;
+import io.ballerina.runtime.api.values.*;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -127,6 +118,8 @@ public class Deserializer {
             Map<String, Object> mapObject = recordToBallerina(dynamicMessage, type, schema);
 
             return ValueCreator.createRecordValue(type.getPackage(), type.getName(), mapObject);
+        } else if (type.getTag() == TypeTags.TABLE_TAG) {
+            return tableToBallerina(dynamicMessage, type, schema, ATOMIC_FIELD_NAME);
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
@@ -155,9 +148,7 @@ public class Deserializer {
 
             BArray bArray = ValueCreator.createArrayValue(TypeCreator.createArrayType(type));
 
-            for (Iterator it = collection.iterator(); it.hasNext(); ) {
-                Object element = it.next();
-
+            for (Object element : collection) {
                 if (type.getTag() == TypeTags.STRING_TAG) {
                     bArray.append(StringUtils.fromString(element.toString()));
                 } else if (type.getTag() == TypeTags.FLOAT_TAG) {
@@ -181,7 +172,7 @@ public class Deserializer {
                     FieldDescriptor fieldDescriptor = nestedSchema.findFieldByName(fieldName);
 
                     BArray nestedArray = (BArray) arrayToBallerina(nestedDynamicMessage.getField(fieldDescriptor),
-                                                                   elementType, nestedSchema, unionFieldIdentifier);
+                            elementType, nestedSchema, unionFieldIdentifier);
 
                     bArray.append(nestedArray);
                 } else if (type.getTag() == TypeTags.UNION_TAG) {
@@ -277,8 +268,6 @@ public class Deserializer {
                 return fieldType.getName();
             } else if (fieldType.getTag() == TypeTags.RECORD_TYPE_TAG) {
                 return getRecordTypeName(fieldType, fieldName);
-            } else {
-                continue;
             }
         }
 
@@ -356,5 +345,28 @@ public class Deserializer {
         }
 
         return null;
+    }
+
+    private static Object tableToBallerina(DynamicMessage dynamicMessage, Type type, Descriptor schema,
+                                           String fieldName){
+        TableType tableType = (TableType) type;
+        Type elementType = tableType.getConstrainedType();
+        BTable bTable = ValueCreator.createTableValue(tableType);
+
+        FieldDescriptor fieldDescriptor = schema.findFieldByName(fieldName);
+        Object tableData = dynamicMessage.getField(fieldDescriptor);
+
+        Descriptor nestedSchema = schema.findNestedTypeByName(elementType.getName());
+
+        Collection table = (Collection) tableData;
+
+        for (Object tableRow : table) {
+            DynamicMessage nestedRecord = (DynamicMessage) tableRow;
+            Map<String, Object> mapObject = recordToBallerina(nestedRecord, elementType, nestedSchema);
+
+            bTable.add(ValueCreator.createRecordValue(elementType.getPackage(), elementType.getName(), mapObject));
+        }
+
+        return bTable;
     }
 }

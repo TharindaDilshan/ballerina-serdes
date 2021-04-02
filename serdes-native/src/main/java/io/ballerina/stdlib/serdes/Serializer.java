@@ -117,9 +117,9 @@ public class Serializer {
             return generateDynamicMessageForRecord((BMap<BString, Object>) dataObject, schema);
         } else if (type.getTag() == TypeTags.TABLE_TAG) {
             TableType tableType = (TableType) type;
-            String fieldName = tableType.getConstrainedType().getName();
+            String fieldType = tableType.getConstrainedType().getName();
 
-            return generateDynamicMessageForTable(dataObject, schema, fieldName);
+            return generateDynamicMessageForTable(dataObject, schema, fieldType, ATOMIC_FIELD_NAME);
         } else {
             throw createSerdesError(UNSUPPORTED_DATA_TYPE + type.getName(), SERDES_ERROR);
         }
@@ -324,14 +324,25 @@ public class Serializer {
         return  newMessageFromSchema.build();
     }
 
-    private static DynamicMessage generateDynamicMessageForTable(Object value, Descriptor schema, String fieldName) {
+    private static DynamicMessage generateDynamicMessageForTable(Object value, Descriptor schema, String fieldType,
+                                                                 String fieldName) {
         DynamicMessage.Builder newMessageFromSchema = DynamicMessage.newBuilder(schema);
         Descriptor messageDescriptor = newMessageFromSchema.getDescriptorForType();
 
-        Descriptor tableSchema = schema.findNestedTypeByName(fieldName);
+        FieldDescriptor fieldDescriptor = messageDescriptor.findFieldByName(fieldName);
+
+        Descriptor tableSchema = schema.findNestedTypeByName(fieldType);
 
         BTable bTable = (BTable) value;
         Object[] objectList = bTable.values().toArray();
-        return null;
+
+        for (Object object : objectList) {
+            BMap<BString, Object> objToBMap = (BMap<BString, Object>) object;
+
+            DynamicMessage nestedMessage = generateDynamicMessageForRecord(objToBMap, tableSchema);
+            newMessageFromSchema.addRepeatedField(fieldDescriptor, nestedMessage);
+        }
+
+        return newMessageFromSchema.build();
     }
 }
