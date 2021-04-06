@@ -534,7 +534,5 @@ public isolated function myTest() returns error? {
     Proto3SerDes des = check new(President);
     President decoded = <President>check des.deserialize(encoded);
 
-    //string file = "bytes.bin";
-    //check io:fileWriteBytes(file, encoded);
     test:assertEquals(decoded, p);
 }
